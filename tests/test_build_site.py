@@ -24,6 +24,8 @@ def test_load_trend_posts_parses_frontmatter_and_sorts_desc(tmp_path):
     assert [p["title"] for p in posts] == ["新しい記事", "古い記事"]
     assert posts[0]["slug"] == "new"
     assert "本文B" in posts[0]["html"]
+    assert posts[0]["date"] == "2026-08-15"
+    assert posts[1]["date"] == "2026-08-01"
 
 
 def test_load_trend_posts_empty_dir_returns_empty_list(tmp_path):

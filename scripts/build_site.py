@@ -24,7 +24,7 @@ def load_trend_posts(content_dir: Path) -> list[dict]:
         post = frontmatter.load(p)
         posts.append({
             "title": post.get("title", p.stem),
-            "date": post.get("date", ""),
+            "date": str(post.get("date", "")),
             "slug": p.stem,
             "html": md.markdown(post.content),
         })
