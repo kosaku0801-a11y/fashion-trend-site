@@ -47,3 +47,30 @@ def _extract_image(entry) -> str | None:
     if entry.get("media_content"):
         return entry["media_content"][0].get("url")
     return None
+
+
+def load_existing_items(path: Path) -> list[dict]:
+    """Loads existing items from a JSON file. Returns empty list if file doesn't exist."""
+    if not path.exists():
+        return []
+    with open(path, encoding="utf-8") as f:
+        return json.load(f)
+
+
+def merge_items(existing: list[dict], new_items: list[dict]) -> list[dict]:
+    """Merges existing and new items, removing duplicates by URL and sorting by published date (descending)."""
+    seen_urls = {item["url"] for item in existing}
+    merged = list(existing)
+    for item in new_items:
+        if item["url"] and item["url"] not in seen_urls:
+            merged.append(item)
+            seen_urls.add(item["url"])
+    merged.sort(key=lambda x: x["published"], reverse=True)
+    return merged
+
+
+def save_items(items: list[dict], path: Path) -> None:
+    """Saves items to a JSON file, creating parent directories if needed."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(items, f, ensure_ascii=False, indent=2)

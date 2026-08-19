@@ -1,4 +1,6 @@
-from scripts.fetch_feeds import parse_feed
+import json
+
+from scripts.fetch_feeds import parse_feed, load_existing_items, merge_items, save_items
 
 SAMPLE_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -29,3 +31,32 @@ def test_parse_feed_extracts_fields():
 def test_parse_feed_empty_feed_returns_empty_list():
     empty_rss = """<?xml version="1.0"?><rss version="2.0"><channel><title>Empty</title></channel></rss>"""
     assert parse_feed(empty_rss, "SampleMedia") == []
+
+
+def test_merge_items_removes_duplicates_by_url():
+    existing = [{"url": "https://example.com/a", "published": "2026-08-19T00:00:00+00:00"}]
+    new_items = [
+        {"url": "https://example.com/a", "published": "2026-08-19T00:00:00+00:00"},
+        {"url": "https://example.com/b", "published": "2026-08-20T00:00:00+00:00"},
+    ]
+    merged = merge_items(existing, new_items)
+    assert [item["url"] for item in merged] == [
+        "https://example.com/b",
+        "https://example.com/a",
+    ]
+
+
+def test_load_existing_items_returns_empty_list_when_missing(tmp_path):
+    missing_path = tmp_path / "items.json"
+    assert load_existing_items(missing_path) == []
+
+
+def test_save_and_load_round_trip(tmp_path):
+    path = tmp_path / "items.json"
+    items = [{"url": "https://example.com/a", "title": "テスト記事", "published": "2026-08-20T00:00:00+00:00"}]
+    save_items(items, path)
+    loaded = load_existing_items(path)
+    assert loaded == items
+    with open(path, encoding="utf-8") as f:
+        raw = json.load(f)
+    assert raw == items
