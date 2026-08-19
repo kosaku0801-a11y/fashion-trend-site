@@ -1,6 +1,7 @@
 import json
+from unittest.mock import patch
 
-from scripts.fetch_feeds import parse_feed, load_existing_items, merge_items, save_items
+from scripts.fetch_feeds import fetch_source, parse_feed, load_existing_items, merge_items, save_items
 
 SAMPLE_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -60,3 +61,18 @@ def test_save_and_load_round_trip(tmp_path):
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
     assert raw == items
+
+
+def test_fetch_source_returns_empty_list_on_parse_error():
+    source = {"name": "BrokenMedia", "url": "https://example.com/broken.xml"}
+    with patch("scripts.fetch_feeds.parse_feed", side_effect=ValueError("boom")):
+        result = fetch_source(source)
+    assert result == []
+
+
+def test_fetch_source_returns_items_on_success():
+    source = {"name": "SampleMedia", "url": "https://example.com/feed.xml"}
+    fake_items = [{"url": "https://example.com/a", "title": "a", "published": "2026-08-20T00:00:00+00:00"}]
+    with patch("scripts.fetch_feeds.parse_feed", return_value=fake_items):
+        result = fetch_source(source)
+    assert result == fake_items

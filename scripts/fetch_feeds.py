@@ -10,6 +10,8 @@ from pathlib import Path
 
 import feedparser
 
+from scripts.feed_sources import FEED_SOURCES
+
 logger = logging.getLogger(__name__)
 
 DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "items.json"
@@ -74,3 +76,26 @@ def save_items(items: list[dict], path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w", encoding="utf-8") as f:
         json.dump(items, f, ensure_ascii=False, indent=2)
+
+
+def fetch_source(source: dict) -> list[dict]:
+    try:
+        return parse_feed(source["url"], source["name"])
+    except Exception as exc:  # noqa: BLE001 - 1メディアの失敗で全体を止めない
+        logger.warning("failed to fetch %s: %s", source["name"], exc)
+        return []
+
+
+def main() -> None:
+    logging.basicConfig(level=logging.INFO)
+    existing = load_existing_items(DATA_PATH)
+    new_items: list[dict] = []
+    for source in FEED_SOURCES:
+        new_items.extend(fetch_source(source))
+    merged = merge_items(existing, new_items)
+    save_items(merged, DATA_PATH)
+    logger.info("saved %d items (was %d)", len(merged), len(existing))
+
+
+if __name__ == "__main__":
+    main()
