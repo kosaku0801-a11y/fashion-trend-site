@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ja">
+<head><meta charset="utf-8"><title>ファッショントレンド速報</title></head>
+<body>
+<h1>ファッショントレンド速報</h1>
+
+<h2>新着情報</h2>
+<ul>
+{% for item in items %}
+  <li>
+    <a href="{{ item.url }}">{{ item.title }}</a>
+    <span>（{{ item.source }}）</span>
+  </li>
+{% endfor %}
+</ul>
+<p><a href="feed.html">新着情報をもっと見る</a></p>
+
+<h2>トレンド分析</h2>
+<ul>
+{% for post in trends %}
+  <li><a href="trends/{{ post.slug }}.html">{{ post.title }}</a>（{{ post.date }}）</li>
+{% endfor %}
+</ul>
+<p><a href="trends/index.html">トレンド分析をもっと見る</a></p>
+</body>
+</html>
