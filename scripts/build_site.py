@@ -7,7 +7,7 @@ from pathlib import Path
 
 import frontmatter
 import markdown as md
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
 
@@ -36,7 +36,10 @@ def load_trend_posts(content_dir: Path) -> list[dict]:
 
 
 def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
-    env = Environment(loader=FileSystemLoader(str(TEMPLATE_DIR)))
+    env = Environment(
+        loader=FileSystemLoader(str(TEMPLATE_DIR)),
+        autoescape=select_autoescape(["html"]),
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     trends_dir = output_dir / "trends"
     trends_dir.mkdir(parents=True, exist_ok=True)
