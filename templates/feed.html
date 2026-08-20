@@ -1,18 +1,23 @@
-<!doctype html>
-<html lang="ja">
-<head><meta charset="utf-8"><title>新着情報 - ファッショントレンド速報</title></head>
-<body>
-<p><a href="index.html">トップへ戻る</a></p>
-<h1>新着情報</h1>
-<ul>
+{% extends "base.html" %}
+{% block title %}新着情報 - ファッショントレンド速報{% endblock %}
+{% block content %}
+
+<div class="section-head">
+  <h2>新着情報</h2>
+</div>
+<div class="feed-list">
 {% for item in items %}
-  <li>
-    {% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.title }}" width="120">{% endif %}
-    <a href="{{ item.url }}">{{ item.title }}</a>
-    <div>{{ item.source }} / {{ item.published }}</div>
-    <p>{{ item.summary | excerpt }}</p>
-  </li>
+  <div class="feed-item">
+    <div class="thumb{% if not item.image_url %} no-image{% endif %}">
+      {% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.title }}">{% endif %}
+    </div>
+    <div>
+      <a class="title" href="{{ item.url }}">{{ item.title }}</a>
+      <div class="meta">{{ item.source }} / {{ item.published }}</div>
+      <p class="excerpt">{{ item.summary | excerpt }}</p>
+    </div>
+  </div>
 {% endfor %}
-</ul>
-</body>
-</html>
+</div>
+
+{% endblock %}

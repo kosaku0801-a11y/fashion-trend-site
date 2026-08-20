@@ -1,26 +1,60 @@
-<!doctype html>
-<html lang="ja">
-<head><meta charset="utf-8"><title>ファッショントレンド速報</title></head>
-<body>
-<h1>ファッショントレンド速報</h1>
+{% extends "base.html" %}
+{% block content %}
 
-<h2>新着情報</h2>
-<ul>
-{% for item in items %}
-  <li>
-    <a href="{{ item.url }}">{{ item.title }}</a>
-    <span>（{{ item.source }}）</span>
-  </li>
+{% if items %}
+{% set hero = items[0] %}
+<a class="hero" href="{{ hero.url }}">
+  <div class="hero-media">
+    {% if hero.image_url %}<img src="{{ hero.image_url }}" alt="{{ hero.title }}">{% endif %}
+    <span class="stamp">JUST IN</span>
+  </div>
+  <div class="hero-body">
+    <div class="eyebrow">{{ hero.source }}</div>
+    <h1>{{ hero.title }}</h1>
+    <div class="meta">{{ hero.published }}</div>
+  </div>
+</a>
+{% endif %}
+
+<div class="section-head">
+  <h2>新着情報</h2>
+  <a class="more" href="feed.html">もっと見る →</a>
+</div>
+<div class="card-grid">
+{% for item in items[1:] %}
+  <a class="card" href="{{ item.url }}">
+    <div class="thumb{% if not item.image_url %} no-image{% endif %}">
+      {% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.title }}">{% endif %}
+    </div>
+    <div class="card-body">
+      <div class="card-title">{{ item.title }}</div>
+      <div class="card-meta">
+        <span>{{ item.source }}</span>
+        <span>{{ item.published[:10] }}</span>
+      </div>
+    </div>
+  </a>
 {% endfor %}
-</ul>
-<p><a href="feed.html">新着情報をもっと見る</a></p>
+</div>
 
-<h2>トレンド分析</h2>
-<ul>
+<div class="section-head">
+  <h2>トレンド分析</h2>
+  <a class="more" href="trends/index.html">もっと見る →</a>
+</div>
+{% if trends %}
+<div class="trend-grid">
 {% for post in trends %}
-  <li><a href="trends/{{ post.slug }}.html">{{ post.title }}</a>（{{ post.date }}）</li>
+  <a class="trend-card" href="trends/{{ post.slug }}.html">
+    <div class="trend-date">{{ post.date }}</div>
+    <div class="trend-title">{{ post.title }}</div>
+  </a>
 {% endfor %}
-</ul>
-<p><a href="trends/index.html">トレンド分析をもっと見る</a></p>
-</body>
-</html>
+</div>
+{% else %}
+<div class="trend-empty">
+  <span class="stamp-inline">COMING SOON</span>
+  <p>週次のトレンド分析記事は準備中です。まずは新着情報からご覧ください。</p>
+</div>
+{% endif %}
+
+{% endblock %}

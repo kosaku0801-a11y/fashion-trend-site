@@ -103,7 +103,7 @@ def test_build_caps_feed_html_at_200_items(tmp_path):
     build(tmp_path, items, [])
 
     feed_html = (tmp_path / "feed.html").read_text(encoding="utf-8")
-    assert feed_html.count('<li>') == 200
+    assert feed_html.count('class="feed-item"') == 200
     assert "記事0" in feed_html
     assert "記事199" in feed_html
     assert "記事200" not in feed_html
@@ -131,3 +131,21 @@ def test_build_creates_nojekyll_file(tmp_path):
     nojekyll = tmp_path / ".nojekyll"
     assert nojekyll.exists()
     assert nojekyll.read_text(encoding="utf-8") == ""
+
+
+def test_build_copies_static_assets(tmp_path):
+    build(tmp_path, [], [])
+    style_css = tmp_path / "static" / "style.css"
+    assert style_css.exists()
+    assert len(style_css.read_text(encoding="utf-8")) > 0
+
+
+def test_build_trends_pages_link_assets_one_level_up(tmp_path):
+    trends = [{"title": "現行記事", "date": "2026-08-20", "slug": "current-slug", "html": "<p>本文</p>"}]
+    build(tmp_path, [], trends)
+
+    trends_index = (tmp_path / "trends" / "index.html").read_text(encoding="utf-8")
+    assert 'href="../static/style.css"' in trends_index
+
+    detail = (tmp_path / "trends" / "current-slug.html").read_text(encoding="utf-8")
+    assert 'href="../static/style.css"' in detail

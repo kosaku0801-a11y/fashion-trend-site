@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import shutil
 from html import unescape
 from pathlib import Path
 
@@ -12,6 +13,7 @@ import markdown as md
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
+STATIC_DIR = Path(__file__).resolve().parent.parent / "static"
 
 _TAG_RE = re.compile(r"<[^>]+>")
 # 一部フィード（FASHIONSNAP等）はdescriptionが閉じ`>`の無いまま途中で切れた
@@ -85,6 +87,14 @@ def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
     # GitHub PagesのJekyll処理を無効化する
     (output_dir / ".nojekyll").write_text("", encoding="utf-8")
 
+    # 静的アセット（CSS等）をdocs/配下にコピーする
+    static_out = output_dir / "static"
+    if STATIC_DIR.exists():
+        static_out.mkdir(parents=True, exist_ok=True)
+        for asset in STATIC_DIR.iterdir():
+            if asset.is_file():
+                shutil.copy2(asset, static_out / asset.name)
+
     (output_dir / "index.html").write_text(
         env.get_template("index.html").render(items=items[:10], trends=trends[:3]),
         encoding="utf-8",
@@ -94,13 +104,13 @@ def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
         encoding="utf-8",
     )
     (trends_dir / "index.html").write_text(
-        env.get_template("trends.html").render(trends=trends),
+        env.get_template("trends.html").render(trends=trends, asset_prefix="../"),
         encoding="utf-8",
     )
     detail_tpl = env.get_template("trend_detail.html")
     for post in trends:
         (trends_dir / f"{post['slug']}.html").write_text(
-            detail_tpl.render(post=post), encoding="utf-8"
+            detail_tpl.render(post=post, asset_prefix="../"), encoding="utf-8"
         )
 
 
