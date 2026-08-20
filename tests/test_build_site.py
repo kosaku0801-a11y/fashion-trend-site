@@ -22,6 +22,15 @@ def test_excerpt_short_plain_text_passes_through_unchanged():
     assert excerpt("短い紹介文です") == "短い紹介文です"
 
 
+def test_excerpt_strips_unclosed_img_tag_missing_closing_bracket():
+    # FASHIONSNAPのフィードで実際に観測された、閉じ`>`の無い不完全なimgタグ
+    raw = '<img src="https://example.com/photo.jpg 東京で撮影しました。'
+    result = excerpt(raw)
+    assert "<img" not in result
+    assert "src=" not in result
+    assert "東京で撮影しました。" in result
+
+
 def test_load_items_returns_empty_list_when_missing(tmp_path):
     assert load_items(tmp_path / "items.json") == []
 

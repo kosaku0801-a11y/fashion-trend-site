@@ -14,18 +14,25 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "templates"
 
 _TAG_RE = re.compile(r"<[^>]+>")
+# 一部フィード（FASHIONSNAP等）はdescriptionが閉じ`>`の無いまま途中で切れた
+# `<img src="...`のような不完全なタグを含むことがある。通常の_TAG_REは`>`を
+# 要求するため除去できず、タグ風の文字列がそのまま読者に見えてしまう。
+# 属性値（URL等）は空白を含まない前提で、`<タグ名 属性="値`の形だけを
+# 狭く対象にして除去する（本文中の通常の"<"はこの形に一致しないため誤爆しない）。
+_UNCLOSED_TAG_RE = re.compile(r'<[a-zA-Z][a-zA-Z0-9]*\s+[a-zA-Z:-]+="[^"\s]*')
 
 
 def excerpt(raw_html: str, limit: int = 200) -> str:
     """RSSのdescription（HTMLタグを含みうる）からタグを除去し、抜粋のプレーンテキストを返す.
 
-    - HTMLタグを除去する
+    - HTMLタグを除去する（閉じ`>`の無い不完全なタグも狭い条件で除去する）
     - HTMLエンティティをアンエスケープする（Jinja2に渡す前のソーステキストをクリーンにするだけで、
       Jinja2の自動エスケープ自体はそのまま有効に働く）
     - 空白・改行を1つのスペースに畳む
     - limit文字を超える場合は切り詰めて「…」を付与する
     """
     text = _TAG_RE.sub("", raw_html or "")
+    text = _UNCLOSED_TAG_RE.sub("", text)
     text = unescape(text)
     text = " ".join(text.split())
     if len(text) > limit:
