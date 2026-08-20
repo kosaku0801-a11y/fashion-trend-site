@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
 
-{% if items %}
-{% set hero = items[0] %}
+{% if hero %}
 <a class="hero" href="{{ hero.url }}">
   <div class="hero-media">
     {% if hero.image_url %}<img src="{{ hero.image_url }}" alt="{{ hero.title }}">{% endif %}
@@ -21,7 +20,7 @@
   <a class="more" href="feed.html">もっと見る →</a>
 </div>
 <div class="card-grid">
-{% for item in items[1:] %}
+{% for item in items %}
   <a class="card" href="{{ item.url }}">
     <div class="thumb{% if not item.image_url %} no-image{% endif %}">
       {% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.title }}">{% endif %}

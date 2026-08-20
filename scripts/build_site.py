@@ -80,6 +80,26 @@ def load_trend_posts(content_dir: Path) -> list[dict]:
 FEED_ITEM_LIMIT = 200
 
 
+def _pick_hero(items: list[dict]) -> tuple[dict | None, list[dict]]:
+    """画像のある最新アイテムをヒーローとして選ぶ。無ければ先頭にフォールバックする.
+
+    itemsは公開日時降順にソート済みであることを前提とする。Highsnobietyのように
+    フィードに画像データを一切含まないソースの記事がたまたま最新（先頭）になると、
+    ヒーロー（トップページの大きな目立つ枠）が画像の無い黒い枠のまま表示され、
+    壊れて見える問題があった。これを避けるため、先頭から順に見て画像URLを持つ
+    最初のアイテムをヒーローとして選び、グリッド（それ以降のカード一覧）からは
+    そのアイテムを除外して重複表示を防ぐ。
+    どのアイテムにも画像が無い場合（空リストを含む）は、従来通りitems[0]に
+    フォールバックする（空リストならヒーロー無し＝Noneを返す）。
+    """
+    for i, item in enumerate(items):
+        if item.get("image_url"):
+            return item, items[:i] + items[i + 1:]
+    if items:
+        return items[0], items[1:]
+    return None, []
+
+
 def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
@@ -107,8 +127,9 @@ def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
             if asset.is_file():
                 shutil.copy2(asset, static_out / asset.name)
 
+    hero, grid_items = _pick_hero(items[:10])
     (output_dir / "index.html").write_text(
-        env.get_template("index.html").render(items=items[:10], trends=trends[:3]),
+        env.get_template("index.html").render(hero=hero, items=grid_items[:9], trends=trends[:3]),
         encoding="utf-8",
     )
     (output_dir / "feed.html").write_text(

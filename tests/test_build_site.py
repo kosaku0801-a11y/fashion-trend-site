@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scripts.build_site import build, excerpt, load_items, load_trend_posts
+from scripts.build_site import build, excerpt, load_items, load_trend_posts, _pick_hero
 
 
 def test_excerpt_strips_html_tags_and_entities_and_truncates():
@@ -169,6 +169,86 @@ def test_build_copies_static_assets(tmp_path):
     style_css = tmp_path / "static" / "style.css"
     assert style_css.exists()
     assert len(style_css.read_text(encoding="utf-8")) > 0
+
+
+def test_pick_hero_selects_first_item_with_image_when_first_item_has_none():
+    # Highsnobietyのように画像を一切持たないソースの記事が最新であっても、
+    # 画像のある最初のアイテムがヒーローとして選ばれることを確認する。
+    items = [
+        {"title": "画像なし記事", "url": "https://example.com/a", "image_url": None},
+        {"title": "画像あり記事", "url": "https://example.com/b", "image_url": "https://example.com/b.jpg"},
+        {"title": "その次の記事", "url": "https://example.com/c", "image_url": None},
+    ]
+    hero, grid = _pick_hero(items)
+    assert hero["title"] == "画像あり記事"
+    assert [item["title"] for item in grid] == ["画像なし記事", "その次の記事"]
+
+
+def test_pick_hero_grid_does_not_duplicate_hero_item():
+    items = [
+        {"title": "A", "url": "https://example.com/a", "image_url": None},
+        {"title": "B", "url": "https://example.com/b", "image_url": "https://example.com/b.jpg"},
+    ]
+    hero, grid = _pick_hero(items)
+    assert hero["title"] == "B"
+    assert len(grid) == 1
+    assert grid[0]["title"] == "A"
+
+
+def test_pick_hero_falls_back_to_first_item_when_no_item_has_image():
+    items = [
+        {"title": "A", "url": "https://example.com/a", "image_url": None},
+        {"title": "B", "url": "https://example.com/b", "image_url": None},
+    ]
+    hero, grid = _pick_hero(items)
+    assert hero["title"] == "A"
+    assert [item["title"] for item in grid] == ["B"]
+
+
+def test_pick_hero_empty_list_returns_none_hero_and_empty_grid():
+    hero, grid = _pick_hero([])
+    assert hero is None
+    assert grid == []
+
+
+def test_build_index_hero_prefers_item_with_image_over_more_recent_imageless_item(tmp_path):
+    # 公開日時降順で最新（先頭）のHighsnobiety記事に画像が無く、2番目の記事に
+    # 画像がある場合、ヒーローには画像のある2番目の記事が使われ、実際に
+    # <img>タグが出力されることを確認する（画像なしの黒い枠がヒーローになる不具合の回帰確認）。
+    items = [
+        {
+            "title": "Highsnobietyの画像なし記事",
+            "url": "https://example.com/no-image",
+            "source": "Highsnobiety",
+            "published": "2026-08-20T00:00:00+00:00",
+            "summary": "画像の無い記事",
+            "image_url": None,
+        },
+        {
+            "title": "画像ありの記事",
+            "url": "https://example.com/with-image",
+            "source": "Fashionsnap",
+            "published": "2026-08-19T00:00:00+00:00",
+            "summary": "画像のある記事",
+            "image_url": "https://example.com/photo.jpg",
+        },
+    ]
+    build(tmp_path, items, [])
+    index_html = (tmp_path / "index.html").read_text(encoding="utf-8")
+    assert 'src="https://example.com/photo.jpg"' in index_html
+    # 画像ありの記事がヒーロー（<h1>）になり、画像なしの記事はグリッドに1回だけ
+    # 出現する（どちらも重複表示されない）。ヒーローのタイトルはimgのalt属性と
+    # <h1>の両方に出るのが仕様なので、alt分の重複はここでは数えない。
+    assert "<h1>画像ありの記事</h1>" in index_html
+    assert index_html.count("Highsnobietyの画像なし記事") == 1
+    assert index_html.count("<h1>") == 1
+
+
+def test_build_index_empty_items_renders_without_hero_and_without_crashing(tmp_path):
+    build(tmp_path, [], [])
+    index_html = (tmp_path / "index.html").read_text(encoding="utf-8")
+    assert (tmp_path / "index.html").exists()
+    assert 'class="hero"' not in index_html
 
 
 def test_build_trends_pages_link_assets_one_level_up(tmp_path):
