@@ -5,6 +5,7 @@ from __future__ import annotations
 import calendar
 import json
 import logging
+import socket
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -88,6 +89,7 @@ def fetch_source(source: dict) -> list[dict]:
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
+    socket.setdefaulttimeout(30)
     existing = load_existing_items(DATA_PATH)
     new_items: list[dict] = []
     for source in FEED_SOURCES:
