@@ -156,6 +156,71 @@ def test_parse_feed_still_prefers_media_thumbnail_when_present():
     assert items[0]["image_url"] == "https://example.com/thumbnail.jpg"
 
 
+def test_parse_feed_extracts_image_from_content_encoded_when_summary_has_none():
+    # HOUYHNHNMの実データはFashionsnap/Hypebeastと異なり、画像はdescription(summary)には
+    # 一切含まれず、content:encoded（entry.content[0].value）にのみ<img>タグとして
+    # 埋め込まれている（実際のフィードをfeedparserで確認済み）。
+    rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+<title>Sample Feed</title>
+<item>
+<title>真夏のブラック。ブラブラブラから軽やかなコットンウェアの新作コレクションが。</title>
+<link>https://example.com/houyhnhnm-item</link>
+<description>&lt;p&gt;こう暑いと服のことを考えるのもなんだか億劫になりますよね。&lt;/p&gt;
+&lt;p&gt;The post &lt;a href="https://example.com/houyhnhnm-item"&gt;記事タイトル&lt;/a&gt; first appeared on &lt;a href="https://example.com"&gt;HOUYHNHNM（フイナム）&lt;/a&gt;.&lt;/p&gt;</description>
+<content:encoded><![CDATA[<div class="tate-img">
+<img alt="" class="alignnone size-full wp-image-1162896 image" height="1000" src="https://www.houyhnhnm.jp/wp-content/uploads/2026/08/BBB_CRSPBLK_01-1.jpg" width="800" />
+</div>]]></content:encoded>
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(rss, "HOUYHNHNM")
+    assert len(items) == 1
+    assert items[0]["image_url"] == "https://www.houyhnhnm.jp/wp-content/uploads/2026/08/BBB_CRSPBLK_01-1.jpg"
+
+
+def test_parse_feed_prefers_summary_image_over_content_encoded_when_both_present():
+    # summary内にimgがあればcontent:encodedより優先する（Fashionsnap/Hypebeastの既存挙動を
+    # 変えないための優先順位）。
+    rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+<title>Sample Feed</title>
+<item>
+<title>両方に画像がある記事</title>
+<link>https://example.com/item-both-images</link>
+<description>&lt;img src="https://example.com/summary-photo.jpg" /&gt; 本文の抜粋です。</description>
+<content:encoded><![CDATA[<img src="https://example.com/content-photo.jpg" />]]></content:encoded>
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(rss, "SampleMedia")
+    assert items[0]["image_url"] == "https://example.com/summary-photo.jpg"
+
+
+def test_parse_feed_no_image_in_summary_or_content_encoded_returns_none():
+    # summary・content:encodedのいずれにも画像が無い場合はNoneを返し、クラッシュしない
+    # （content:encoded自体が存在するフィードでの回帰確認）。
+    rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+<channel>
+<title>Sample Feed</title>
+<item>
+<title>画像の無い記事（content:encodedあり）</title>
+<link>https://example.com/item-no-image-with-content</link>
+<description>画像を含まない普通の説明文です。</description>
+<content:encoded><![CDATA[<p>本文にも画像はありません。</p>]]></content:encoded>
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(rss, "SampleMedia")
+    assert items[0]["image_url"] is None
+
+
 def test_parse_feed_no_image_anywhere_returns_none_without_crashing():
     rss = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">

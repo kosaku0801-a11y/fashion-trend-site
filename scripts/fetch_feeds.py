@@ -81,8 +81,17 @@ def _extract_image(entry) -> str | None:
     if entry.get("media_content"):
         url = entry["media_content"][0].get("url")
         return url if _is_safe_url(url) else None
-    # フォールバック: media拡張要素が無い場合、description内のimgタグから抽出する
-    return _extract_image_from_html(entry.get("summary", ""))
+    # フォールバック1: media拡張要素が無い場合、description内のimgタグから抽出する
+    # （Fashionsnap・Hypebeastはここで見つかる）
+    image = _extract_image_from_html(entry.get("summary", ""))
+    if image:
+        return image
+    # フォールバック2: descriptionに画像が無い場合、content:encoded
+    # （entry.content[0].value、feedparserがlistで公開する）内のimgタグから抽出する。
+    # HOUYHNHNMの実データはdescriptionに画像を一切含まず、content:encodedにのみ
+    # <img>タグとして埋め込まれている（実際のフィードで確認済み）。
+    content_list = entry.get("content") or [{}]
+    return _extract_image_from_html(content_list[0].get("value", ""))
 
 
 def load_existing_items(path: Path) -> list[dict]:

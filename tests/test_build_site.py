@@ -31,6 +31,37 @@ def test_excerpt_strips_unclosed_img_tag_missing_closing_bracket():
     assert "東京で撮影しました。" in result
 
 
+def test_excerpt_strips_wordpress_the_post_first_appeared_on_boilerplate():
+    # HOUYHNHNMの実データ（WordPress由来）は、descriptionの末尾に必ず
+    # 「The post <a>記事タイトル</a> first appeared on <a>サイト名</a>.」という
+    # 英語の定型フッターが付く。タグ除去後はリンクテキスト（記事タイトル・サイト名）が
+    # 地の文として残るため、周辺の英語の定型句だけを狙って除去する。
+    raw = (
+        '<p>こう暑いと服のことを考えるのもなんだか億劫になりますよね。'
+        '少しでも涼しげに、ということで、白とか爽やかな色を身に纏いたいところ。'
+        'なのですが、あえて「真夏のブラック」をテーマにしたコレクションが'
+        '〈ブラブラブラ（BbbLl）〉から発売 […]</p>\n'
+        '<p>The post <a href="https://www.houyhnhnm.jp/news/1162887/">'
+        '真夏のブラック。ブラブラブラから軽やかなコットンウェアの新作コレクションが。'
+        '夏に黒もオツなものです。</a> first appeared on '
+        '<a href="https://www.houyhnhnm.jp">HOUYHNHNM（フイナム）</a>.</p>'
+    )
+    result = excerpt(raw)
+    assert "The post" not in result
+    assert "first appeared on" not in result
+    assert "HOUYHNHNM" not in result
+    assert result.startswith("こう暑いと服のことを考えるのもなんだか億劫になりますよね。")
+    assert result.endswith("から発売 […]")
+
+
+def test_excerpt_normal_summary_without_wordpress_boilerplate_is_unaffected():
+    # Fashionsnap/Hypebeast等、WordPressの定型フッターを持たない通常の抜粋文は
+    # 一切変化しない（"post"や"first"を含む正当な本文を誤って削らないことの確認）。
+    raw = "<p>新作スニーカーが発売された。This is the first drop of the post-summer collection.</p>"
+    result = excerpt(raw)
+    assert result == "新作スニーカーが発売された。This is the first drop of the post-summer collection."
+
+
 def test_load_items_returns_empty_list_when_missing(tmp_path):
     assert load_items(tmp_path / "items.json") == []
 

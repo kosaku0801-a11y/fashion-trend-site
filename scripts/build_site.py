@@ -23,6 +23,15 @@ _TAG_RE = re.compile(r"<[^>]+>")
 # 狭く対象にして除去する（本文中の通常の"<"はこの形に一致しないため誤爆しない）。
 _UNCLOSED_TAG_RE = re.compile(r'<[a-zA-Z][a-zA-Z0-9]*\s+[a-zA-Z:-]+="[^"\s]*')
 
+# WordPress系フィード（HOUYHNHNM等）のdescriptionの末尾に必ず付く
+# 「The post <a>記事タイトル</a> first appeared on <a>サイト名</a>.」という定型フッターの
+# 除去用。タグ除去後は記事タイトル・サイト名がリンクテキストとして地の文に残るため、
+# 変動する部分（タイトル・サイト名）ではなく前後の固定の英語フレーズだけに一致させる。
+# `.+?`は非貪欲マッチ: 通常このフッターは文字列の末尾に1つだけ出現するため、貪欲/非貪欲の
+# 結果は変わらないが、万一本文中に同じ英語フレーズが偶然含まれる場合でも、最も手前の
+# 一致から末尾までの最小範囲だけを削るようにするため非貪欲を選ぶ。
+_WORDPRESS_BOILERPLATE_RE = re.compile(r"\s*The post .+? first appeared on .+?\.\s*$")
+
 
 def excerpt(raw_html: str, limit: int = 200) -> str:
     """RSSのdescription（HTMLタグを含みうる）からタグを除去し、抜粋のプレーンテキストを返す.
@@ -30,6 +39,8 @@ def excerpt(raw_html: str, limit: int = 200) -> str:
     - HTMLタグを除去する（閉じ`>`の無い不完全なタグも狭い条件で除去する）
     - HTMLエンティティをアンエスケープする（Jinja2に渡す前のソーステキストをクリーンにするだけで、
       Jinja2の自動エスケープ自体はそのまま有効に働く）
+    - WordPress系フィードの「The post ... first appeared on ....」という定型フッター
+      （本文ではなくサイトのリンク案内文）を除去する
     - 空白・改行を1つのスペースに畳む
     - limit文字を超える場合は切り詰めて「…」を付与する
     """
@@ -37,6 +48,7 @@ def excerpt(raw_html: str, limit: int = 200) -> str:
     text = _UNCLOSED_TAG_RE.sub("", text)
     text = unescape(text)
     text = " ".join(text.split())
+    text = _WORDPRESS_BOILERPLATE_RE.sub("", text)
     if len(text) > limit:
         return text[:limit] + "…"
     return text
