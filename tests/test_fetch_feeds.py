@@ -461,6 +461,30 @@ def test_is_excluded_false_for_gdragon_outfit_news_and_prior_anime_collabs():
         assert _is_excluded(item) is False, item["title"]
 
 
+def test_is_excluded_true_for_obituary_secondhand_business_and_fragrance_column():
+    # オーナー確認済みの境界事例3件（2026-08-21）。いずれも服・シューズの商品情報ではなく、
+    # 「服・スニーカーを軸にする」という方針のもとで除外対象に追加した。
+    titles = [
+        "ディオールの名物PRディレクターが事故死　ジョナサン・アンダーソンらが追悼",
+        "ファミマが中古品買取サービスを開始　ブックオフとタッグ",
+        "音楽と香りのマリアージュをテーマに。フィッシュマンズの『LONG SEASON』"
+        "リリース30周年を記念したOSAJIとの企画です。",
+    ]
+    for title in titles:
+        assert _is_excluded({"title": title, "summary": ""}) is True, title
+
+
+def test_is_excluded_false_for_fashion_items_mentioning_death_or_secondhand():
+    # 上記3件の追加キーワードが、無関係な正当なファッション記事を誤って
+    # 除外しないことの回帰確認。
+    items = [
+        {"title": "アディダスがトレイルレーシングシューズの最高峰モデルを発表", "summary": ""},
+        {"title": "エルメスの二次流通専門店が青山に新規出店", "summary": "国内外で高まる希少モデル需要が追い風に"},
+    ]
+    for item in items:
+        assert _is_excluded(item) is False, item["title"]
+
+
 def test_fetch_source_filters_out_excluded_items():
     source = {"name": "Fashionsnap", "url": "https://example.com/feed.xml"}
     fake_items = [
