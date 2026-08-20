@@ -5,8 +5,21 @@
 <div class="section-head">
   <h2>新着情報</h2>
 </div>
+
+{% if groups %}
+<nav class="feed-toc">
+{% for group in groups %}
+  <a href="#source-{{ group.source }}">{{ group.source }}</a>
+{% endfor %}
+</nav>
+{% endif %}
+
+{% for group in groups %}
+<div class="section-head feed-source-head" id="source-{{ group.source }}">
+  <h2>{{ group.source }}</h2>
+</div>
 <div class="feed-list">
-{% for item in items %}
+{% for item in group.entries %}
   <div class="feed-item">
     <div class="thumb{% if not item.image_url %} no-image{% endif %}">
       {% if item.image_url %}<img src="{{ item.image_url }}" alt="{{ item.title }}">{% endif %}
@@ -19,5 +32,6 @@
   </div>
 {% endfor %}
 </div>
+{% endfor %}
 
 {% endblock %}

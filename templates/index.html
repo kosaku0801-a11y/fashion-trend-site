@@ -16,6 +16,33 @@
 {% endif %}
 
 <div class="section-head">
+  <h2>トレンド分析</h2>
+  <a class="more" href="trends/index.html">もっと見る →</a>
+</div>
+{% if trends %}
+<a class="trend-feature" href="trends/{{ trends[0].slug }}.html">
+  <div class="trend-feature-date">{{ trends[0].date }}</div>
+  <div class="trend-feature-title">{{ trends[0].title }}</div>
+  <p class="trend-feature-lead">{{ trends[0].html | excerpt }}</p>
+</a>
+{% if trends[1:] %}
+<div class="trend-grid trend-grid-sub">
+{% for post in trends[1:] %}
+  <a class="trend-card" href="trends/{{ post.slug }}.html">
+    <div class="trend-date">{{ post.date }}</div>
+    <div class="trend-title">{{ post.title }}</div>
+  </a>
+{% endfor %}
+</div>
+{% endif %}
+{% else %}
+<div class="trend-empty">
+  <span class="stamp-inline">COMING SOON</span>
+  <p>週次のトレンド分析記事は準備中です。まずは新着情報からご覧ください。</p>
+</div>
+{% endif %}
+
+<div class="section-head">
   <h2>新着情報</h2>
   <a class="more" href="feed.html">もっと見る →</a>
 </div>
@@ -28,32 +55,12 @@
     <div class="card-body">
       <div class="card-title">{{ item.title }}</div>
       <div class="card-meta">
-        <span>{{ item.source }}</span>
+        <span class="source-badge">{{ item.source }}</span>
         <span>{{ item.published[:10] }}</span>
       </div>
     </div>
   </a>
 {% endfor %}
 </div>
-
-<div class="section-head">
-  <h2>トレンド分析</h2>
-  <a class="more" href="trends/index.html">もっと見る →</a>
-</div>
-{% if trends %}
-<div class="trend-grid">
-{% for post in trends %}
-  <a class="trend-card" href="trends/{{ post.slug }}.html">
-    <div class="trend-date">{{ post.date }}</div>
-    <div class="trend-title">{{ post.title }}</div>
-  </a>
-{% endfor %}
-</div>
-{% else %}
-<div class="trend-empty">
-  <span class="stamp-inline">COMING SOON</span>
-  <p>週次のトレンド分析記事は準備中です。まずは新着情報からご覧ください。</p>
-</div>
-{% endif %}
 
 {% endblock %}

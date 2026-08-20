@@ -142,7 +142,7 @@ main {
 
 .hero .hero-media {
   position: relative;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 4 / 3;
   background: #1a1a1a;
 }
 
@@ -154,7 +154,7 @@ main {
 }
 
 .hero .hero-body {
-  padding: 1.4rem 1.6rem 1.8rem;
+  padding: 2rem 2.2rem 2.4rem;
 }
 
 .hero .eyebrow {
@@ -176,6 +176,44 @@ main {
   font-family: var(--mono);
   font-size: 0.78rem;
   color: rgba(242, 240, 236, 0.65);
+}
+
+/* ---- トップページ: トレンド分析フィーチャーカード ---- */
+
+.trend-feature {
+  display: block;
+  margin-top: 1.6rem;
+  padding: 1.8rem 2rem;
+  background: var(--paper-dim);
+  border-left: 6px solid var(--accent);
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.trend-feature-date {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--mute);
+  letter-spacing: 0.04em;
+}
+
+.trend-feature-title {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: clamp(1.3rem, 3vw, 1.8rem);
+  line-height: 1.3;
+  margin: 0.6rem 0 0.8rem;
+}
+
+.trend-feature-lead {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #333;
+  line-height: 1.8;
+}
+
+.trend-grid-sub {
+  margin-top: 1rem;
 }
 
 /* ---- NEWスタンプ（サイン要素） ---- */
@@ -268,6 +306,7 @@ main {
 .card .card-meta {
   margin-top: auto;
   display: flex;
+  align-items: center;
   justify-content: space-between;
   font-family: var(--mono);
   font-size: 0.68rem;
@@ -275,11 +314,47 @@ main {
   letter-spacing: 0.02em;
 }
 
+.source-badge {
+  border: 1px solid var(--ink);
+  padding: 0.12rem 0.4rem;
+  color: var(--ink);
+}
+
 .card .card-excerpt {
   font-size: 0.82rem;
   color: var(--mute);
   line-height: 1.6;
   margin: 0;
+}
+
+/* ---- 新着一覧ページ（feed.html）: ソース別セクション分け ---- */
+
+.feed-toc {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin: 1.2rem 0 0;
+}
+
+.feed-toc a {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  color: var(--ink);
+  border: 1px solid var(--line);
+  padding: 0.3rem 0.7rem;
+}
+
+.feed-toc a:hover,
+.feed-toc a:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.feed-source-head {
+  margin-top: 2.2rem;
+  scroll-margin-top: 1rem;
 }
 
 /* ---- 新着一覧ページ（feed.html）: 1カラムの詳しめリスト ---- */
@@ -423,10 +498,59 @@ main {
   margin: 1.6rem 0 0.2rem;
 }
 
+.article-toc {
+  margin: 1.6rem 0 0;
+  padding: 1rem 1.2rem;
+  background: var(--paper-dim);
+  border-left: 4px solid var(--accent);
+}
+
+.article-toc-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--mute);
+  margin-bottom: 0.5rem;
+}
+
+.article-toc .toc {
+  margin: 0;
+}
+
+.article-toc ul {
+  margin: 0;
+  padding-left: 1.1rem;
+  list-style: none;
+}
+
+.article-toc li {
+  margin: 0.35rem 0;
+}
+
+.article-toc a {
+  text-decoration: none;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.article-toc a:hover,
+.article-toc a:focus-visible {
+  color: var(--accent);
+}
+
 .article-body {
   margin-top: 1.6rem;
   font-size: 1rem;
   line-height: 1.9;
+}
+
+.article-body h2 {
+  font-family: var(--display);
+  font-weight: 900;
+  font-size: 1.25rem;
+  margin: 2.2rem 0 0.8rem;
+  padding-top: 0.4rem;
+  border-top: 2px solid var(--ink);
 }
 
 .article-body p {

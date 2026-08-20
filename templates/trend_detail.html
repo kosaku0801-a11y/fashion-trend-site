@@ -8,6 +8,12 @@
 <article>
   <div class="article-meta">{{ post.date }}</div>
   <h1 class="article-title">{{ post.title }}</h1>
+  {% if post.toc %}
+  <nav class="article-toc">
+    <div class="article-toc-label">この記事の内容</div>
+    {{ post.toc | safe }}
+  </nav>
+  {% endif %}
   <div class="article-body">{{ post.html | safe }}</div>
 </article>
 

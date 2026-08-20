@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scripts.build_site import build, excerpt, load_items, load_trend_posts, _pick_hero
+from scripts.build_site import build, excerpt, load_items, load_trend_posts, _pick_hero, _group_by_source
 
 
 def test_excerpt_strips_html_tags_and_entities_and_truncates():
@@ -89,6 +89,28 @@ def test_load_trend_posts_parses_frontmatter_and_sorts_desc(tmp_path):
 
 def test_load_trend_posts_empty_dir_returns_empty_list(tmp_path):
     assert load_trend_posts(tmp_path / "does-not-exist") == []
+
+
+def test_load_trend_posts_builds_toc_from_h2_headings(tmp_path):
+    (tmp_path / "post.md").write_text(
+        "---\ntitle: 見出しのある記事\ndate: 2026-08-21\n---\n"
+        "## 色のトレンド\n本文A\n\n## 素材のトレンド\n本文B\n",
+        encoding="utf-8",
+    )
+    posts = load_trend_posts(tmp_path)
+    assert 'href="#' in posts[0]["toc"]
+    assert "色のトレンド" in posts[0]["toc"]
+    assert "素材のトレンド" in posts[0]["toc"]
+    assert 'id="' in posts[0]["html"]
+
+
+def test_load_trend_posts_toc_is_none_when_no_headings(tmp_path):
+    (tmp_path / "post.md").write_text(
+        "---\ntitle: 見出しのない記事\ndate: 2026-08-21\n---\n本文のみで見出しは無い。\n",
+        encoding="utf-8",
+    )
+    posts = load_trend_posts(tmp_path)
+    assert posts[0]["toc"] is None
 
 
 def test_build_writes_expected_files(tmp_path):
@@ -242,6 +264,107 @@ def test_build_index_hero_prefers_item_with_image_over_more_recent_imageless_ite
     assert "<h1>画像ありの記事</h1>" in index_html
     assert index_html.count("Highsnobietyの画像なし記事") == 1
     assert index_html.count("<h1>") == 1
+
+
+def test_group_by_source_groups_items_preserving_first_appearance_order():
+    items = [
+        {"title": "A", "source": "Hypebeast"},
+        {"title": "B", "source": "Fashionsnap"},
+        {"title": "C", "source": "Hypebeast"},
+        {"title": "D", "source": "Fashionsnap"},
+    ]
+    groups = _group_by_source(items)
+    assert [g["source"] for g in groups] == ["Hypebeast", "Fashionsnap"]
+    assert [item["title"] for item in groups[0]["entries"]] == ["A", "C"]
+    assert [item["title"] for item in groups[1]["entries"]] == ["B", "D"]
+
+
+def test_group_by_source_empty_list_returns_empty_list():
+    assert _group_by_source([]) == []
+
+
+def test_build_feed_html_groups_items_by_source_with_toc(tmp_path):
+    items = [
+        {
+            "title": "記事A",
+            "url": "https://example.com/a",
+            "source": "Hypebeast",
+            "published": "2026-08-20T00:00:00+00:00",
+            "summary": "紹介文A",
+            "image_url": None,
+        },
+        {
+            "title": "記事B",
+            "url": "https://example.com/b",
+            "source": "Fashionsnap",
+            "published": "2026-08-19T00:00:00+00:00",
+            "summary": "紹介文B",
+            "image_url": None,
+        },
+    ]
+    build(tmp_path, items, [])
+    feed_html = (tmp_path / "feed.html").read_text(encoding="utf-8")
+    assert 'href="#source-Hypebeast"' in feed_html
+    assert 'href="#source-Fashionsnap"' in feed_html
+    assert 'id="source-Hypebeast"' in feed_html
+    assert 'id="source-Fashionsnap"' in feed_html
+    assert feed_html.index("記事A") < feed_html.index("記事B")
+
+
+def test_build_index_trend_section_appears_before_new_arrivals_section(tmp_path):
+    items = [{
+        "title": "新作スニーカー登場",
+        "url": "https://example.com/a",
+        "source": "Hypebeast",
+        "published": "2026-08-20T00:00:00+00:00",
+        "summary": "新作の紹介文",
+        "image_url": None,
+    }]
+    trends = [{"title": "今週のトレンド", "date": "2026-08-20", "slug": "week-1", "html": "<p>本文</p>"}]
+
+    build(tmp_path, items, trends)
+    index_html = (tmp_path / "index.html").read_text(encoding="utf-8")
+    assert index_html.index('class="trend-feature"') < index_html.index('class="card-grid"')
+
+
+def test_build_index_latest_trend_rendered_as_feature_card(tmp_path):
+    trends = [
+        {"title": "今週のトレンド", "date": "2026-08-20", "slug": "week-1", "html": "<p>本文リード</p>"},
+        {"title": "先週のトレンド", "date": "2026-08-13", "slug": "week-0", "html": "<p>先週の本文</p>"},
+    ]
+    build(tmp_path, [], trends)
+    index_html = (tmp_path / "index.html").read_text(encoding="utf-8")
+    assert 'class="trend-feature"' in index_html
+    assert "今週のトレンド" in index_html
+    assert "本文リード" in index_html
+    # 2件目は引き続きtrend-cardとして小さく表示される
+    assert 'class="trend-card"' in index_html
+    assert "先週のトレンド" in index_html
+
+
+def test_build_index_new_arrival_card_shows_source_badge(tmp_path):
+    items = [
+        {
+            "title": "ヒーロー用記事",
+            "url": "https://example.com/hero",
+            "source": "Fashionsnap",
+            "published": "2026-08-20T00:00:00+00:00",
+            "summary": "ヒーローの紹介文",
+            "image_url": "https://example.com/hero.jpg",
+        },
+        {
+            "title": "新作スニーカー登場",
+            "url": "https://example.com/a",
+            "source": "Hypebeast",
+            "published": "2026-08-19T00:00:00+00:00",
+            "summary": "新作の紹介文",
+            "image_url": None,
+        },
+    ]
+    build(tmp_path, items, [])
+    index_html = (tmp_path / "index.html").read_text(encoding="utf-8")
+    assert 'class="source-badge"' in index_html
+    assert "Hypebeast" in index_html
 
 
 def test_build_index_empty_items_renders_without_hero_and_without_crashing(tmp_path):

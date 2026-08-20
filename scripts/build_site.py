@@ -67,11 +67,14 @@ def load_trend_posts(content_dir: Path) -> list[dict]:
     posts = []
     for p in sorted(content_dir.glob("*.md")):
         post = frontmatter.load(p)
+        converter = md.Markdown(extensions=["toc"])
+        html = converter.convert(post.content)
         posts.append({
             "title": post.get("title", p.stem),
             "date": str(post.get("date", "")),
             "slug": p.stem,
-            "html": md.markdown(post.content),
+            "html": html,
+            "toc": converter.toc if converter.toc_tokens else None,
         })
     posts.sort(key=lambda x: str(x["date"]), reverse=True)
     return posts
@@ -98,6 +101,23 @@ def _pick_hero(items: list[dict]) -> tuple[dict | None, list[dict]]:
     if items:
         return items[0], items[1:]
     return None, []
+
+
+def _group_by_source(items: list[dict]) -> list[dict]:
+    """itemsを出典ソースごとにグループ化する。
+
+    グループの並び順はitemsを先頭から走査して初めて出現したソースの順、
+    各グループ内の並び順はitemsの既存順序（公開日時降順）をそのまま保つ。
+    """
+    order: list[str] = []
+    groups: dict[str, list[dict]] = {}
+    for item in items:
+        source = item.get("source", "")
+        if source not in groups:
+            groups[source] = []
+            order.append(source)
+        groups[source].append(item)
+    return [{"source": s, "entries": groups[s]} for s in order]
 
 
 def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
@@ -133,7 +153,9 @@ def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
         encoding="utf-8",
     )
     (output_dir / "feed.html").write_text(
-        env.get_template("feed.html").render(items=items[:FEED_ITEM_LIMIT]),
+        env.get_template("feed.html").render(
+            groups=_group_by_source(items[:FEED_ITEM_LIMIT])
+        ),
         encoding="utf-8",
     )
     (trends_dir / "index.html").write_text(
