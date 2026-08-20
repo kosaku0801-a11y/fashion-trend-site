@@ -368,6 +368,99 @@ def test_is_excluded_false_for_legitimate_fashion_anime_collaboration():
     assert _is_excluded(item) is False
 
 
+def test_is_excluded_true_for_cosmetics_and_beauty_items():
+    # オーナー要望「服・スニーカー中心」への対応でコスメ・スキンケア・メイクアップ関連を
+    # 除外対象に追加。実データ（data/items.json）で実際に混入していたタイトルを使用する。
+    titles = [
+        "弾むようなハリのある肌に　SUQQU「アクフォンス」から新スキンケアが登場",
+        "【2026年クリスマスコフレ】キールズ：“ホテルライクなご褒美時間” を叶える限定スキンケア",
+        "【2026年秋コスメ】シャネル：ココ マドモアゼルの精神を宿すメイクアップなどが登場",
+        "無印良品「着るスキンケア」が一時販売停止　外箱に誤字が発覚",
+        "【2026年秋コスメ】NARS：重ねてニュアンスを楽しむアイシャドウやリップライナーが登場",
+        "「アンレーベル ラボ」集中美容液ヘアケアがリニューアル　“サロン級”補修成分を新配合",
+    ]
+    for title in titles:
+        assert _is_excluded({"title": title, "summary": ""}) is True, title
+    # 「バイユア」の実例はタイトルに直接キーワードを含まず、summary側
+    # （「毛穴管理に着目したスキンケアライン」）でのみ「スキンケア」を含む実データのため、
+    # summaryも合わせて判定されることを確認する。
+    byur_item = {
+        "title": "「バイユア」から毛穴汚れを吸着して落とす新ライン誕生",
+        "summary": "「バイユア（ByUR）」が、毛穴管理に着目したスキンケアライン「クリーンリセット ブラックライン」を"
+        "10月29日に発売する。",
+    }
+    assert _is_excluded(byur_item) is True
+
+
+def test_is_excluded_true_for_fragrance_and_body_care_items():
+    titles = [
+        "より贅沢な濃度に　「ディオール」がジャスミンの香りを再解釈したフレグランス発売",
+        "「ジバンシイ」が新フレグランスを伊勢丹新宿店で限定発売　ウッディシトラスの調香",
+        "ディプティックから古代ギリシャの入浴文化に着想したボディケアコレクションが登場",
+    ]
+    for title in titles:
+        assert _is_excluded({"title": title, "summary": ""}) is True, title
+
+
+def test_is_excluded_true_for_finance_and_corporate_ma_news():
+    # クレジットカード提携・M&A・株式取得など、ファッション商品と無関係な金融・法人ニュース
+    item_card = {"title": "アメックスとANAの提携カードがリニューアル　旅行ニーズの変化に対応", "summary": ""}
+    item_ma = {"title": "旧マックハウスが「クラネ」運営会社の株式取得　持株比率は19％", "summary": ""}
+    assert _is_excluded(item_card) is True
+    assert _is_excluded(item_ma) is True
+
+
+def test_is_excluded_true_for_consumer_trouble_and_lifestyle_column_items():
+    titles = [
+        "ファッションサブスク「アールカワイイ」で解約トラブル多数　国民生活センターが注意喚起",
+        "東京・高輪発のウェルネスコミュニティ「TOKYO BLANK CLUB」が始動",
+        "「本を売る」だけではない書店ビジネス　ファッション業界にも通じるリアル店舗の生存戦略",
+        "三宅香帆が語る、ブッククラブの可能性とファッションが心に与える体温",
+        "【異業種に学ぶ】服や飲食など複合型ゴルフ練習場「ロイヤルグリーン水戸」",
+        "人口減少と向き合った新しい地方の街づくりとは？ ニューローカルの石田遼さんを迎えた「カルチャースケーパーズ」。",
+    ]
+    for title in titles:
+        assert _is_excluded({"title": title, "summary": ""}) is True, title
+
+
+def test_is_excluded_true_for_pure_music_news_unrelated_to_fashion():
+    # 「ライブ・アルバム」はこの1件の実例のみを狙った狭いキーワード。
+    # 広く「音楽」「ライブ」単体をキーワードにはしていない（下のfalseテスト参照）。
+    item = {
+        "title": "KID FRESINOがワンマンライブ『21』のライブ・アルバムを配信リリース。"
+        "『AOS』のライブ映像もYouTubeで公開です。",
+        "summary": "",
+    }
+    assert _is_excluded(item) is True
+
+
+def test_is_excluded_false_for_bags_jewelry_eyewear_and_street_style_items():
+    # オーナーの明示的な方針: バッグ・ジュエリー／アクセサリー・アイウェアはファッション周辺の
+    # 正当な商品ニュースとして除外しない。ストリートスナップも除外しない。
+    items = [
+        {"title": "グッチが新作バッグ「ジャッキー フラップ」発売、ショルダーとクロスボディの2way仕様", "summary": ""},
+        {"title": "ポロ ラルフ ローレンが新作バッグ「ポロ ブレイズ」発売、ショルダーとトップハンドルの2種", "summary": ""},
+        {"title": "シャネル出身デザイナーによるシルバージュエリー「オタノ」が渋谷でポップアップ開催", "summary": ""},
+        {"title": "ハイクがエンドカスタムジュエラーズとコラボ　ネックレスやブレスレットなど8型を発売", "summary": ""},
+        {"title": "ジンズが“中顔面を短く見せる”新作アイウェア発売　イコラブ大谷をヴィジュアルに起用", "summary": ""},
+        {"title": "ストリートスタイル: Job: モデル", "summary": ""},
+    ]
+    for item in items:
+        assert _is_excluded(item) is False, item["title"]
+
+
+def test_is_excluded_false_for_gdragon_outfit_news_and_prior_anime_collabs():
+    # 音楽アーティストが登場する記事でも、衣装・コラボ等のファッション本題であれば除外しない。
+    # また過去のQA対応で許容された正当なファッション×アニメコラボ記事も引き続き除外しない。
+    items = [
+        {"title": "G-DRAGON、BIGBANG‎の新曲MVでタナカダイスケの衣装を着用", "summary": ""},
+        {"title": "コンバース トウキョウがまどマギと初コラボ　アートTシャツやアクセサリーなど発売", "summary": ""},
+        {"title": "グラニフが「呪術廻戦」とコラボ　Tシャツやパーカなど全21型", "summary": ""},
+    ]
+    for item in items:
+        assert _is_excluded(item) is False, item["title"]
+
+
 def test_fetch_source_filters_out_excluded_items():
     source = {"name": "Fashionsnap", "url": "https://example.com/feed.xml"}
     fake_items = [
