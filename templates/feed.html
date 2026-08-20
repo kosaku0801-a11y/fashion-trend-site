@@ -10,7 +10,7 @@
     {% if item.image_url %}<img src="{{ item.image_url }}" alt="" width="120">{% endif %}
     <a href="{{ item.url }}">{{ item.title }}</a>
     <div>{{ item.source }} / {{ item.published }}</div>
-    <p>{{ item.summary }}</p>
+    <p>{{ item.summary | excerpt }}</p>
   </li>
 {% endfor %}
 </ul>

@@ -1,6 +1,25 @@
 from pathlib import Path
 
-from scripts.build_site import build, load_items, load_trend_posts
+from scripts.build_site import build, excerpt, load_items, load_trend_posts
+
+
+def test_excerpt_strips_html_tags_and_entities_and_truncates():
+    raw = (
+        '<div><img src="https://example.com/a.jpg" /><p>' +
+        "とても&amp;素敵な新作スニーカーが登場しました。" * 10 +
+        "</p></div>"
+    )
+    result = excerpt(raw)
+    assert "<img" not in result
+    assert "<p>" not in result
+    assert "&amp;" not in result
+    assert "&" in result  # アンエスケープされて素の文字になっている
+    assert len(result) == 201  # 200文字 + "…"
+    assert result.endswith("…")
+
+
+def test_excerpt_short_plain_text_passes_through_unchanged():
+    assert excerpt("短い紹介文です") == "短い紹介文です"
 
 
 def test_load_items_returns_empty_list_when_missing(tmp_path):
