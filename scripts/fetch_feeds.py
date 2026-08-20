@@ -26,15 +26,22 @@ def parse_feed(source: str, source_name: str) -> list[dict]:
 
     items = []
     for entry in parsed.entries:
+        url = entry.get("link", "").strip()
+        image_url = _extract_image(entry)
         items.append({
             "title": entry.get("title", "").strip(),
-            "url": entry.get("link", "").strip(),
+            "url": url if _is_safe_url(url) else "",
             "source": source_name,
             "published": _to_iso(entry.get("published_parsed")),
             "summary": entry.get("summary", "").strip(),
-            "image_url": _extract_image(entry),
+            "image_url": image_url if _is_safe_url(image_url) else None,
         })
     return items
+
+
+def _is_safe_url(url: str | None) -> bool:
+    """http/https のURLのみを安全とみなす（javascript: 等の危険なスキームを拒否する）."""
+    return bool(url) and url.startswith(("http://", "https://"))
 
 
 def _to_iso(struct_time) -> str:

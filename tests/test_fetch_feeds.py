@@ -34,6 +34,44 @@ def test_parse_feed_empty_feed_returns_empty_list():
     assert parse_feed(empty_rss, "SampleMedia") == []
 
 
+def test_parse_feed_rejects_javascript_url_scheme():
+    malicious_rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>Malicious Feed</title>
+<item>
+<title>危険なリンク</title>
+<link>javascript:alert(1)</link>
+<description>説明文</description>
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(malicious_rss, "SampleMedia")
+    assert len(items) == 1
+    assert items[0]["url"] == ""
+
+
+def test_parse_feed_rejects_javascript_image_url_scheme():
+    malicious_rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+<channel>
+<title>Malicious Feed</title>
+<item>
+<title>危険な画像リンク</title>
+<link>https://example.com/a</link>
+<description>説明文</description>
+<media:thumbnail url="javascript:alert(1)" />
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(malicious_rss, "SampleMedia")
+    assert len(items) == 1
+    assert items[0]["url"] == "https://example.com/a"
+    assert items[0]["image_url"] is None
+
+
 def test_merge_items_removes_duplicates_by_url():
     existing = [{"url": "https://example.com/a", "published": "2026-08-19T00:00:00+00:00"}]
     new_items = [
