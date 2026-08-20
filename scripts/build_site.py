@@ -56,6 +56,9 @@ def load_trend_posts(content_dir: Path) -> list[dict]:
     return posts
 
 
+FEED_ITEM_LIMIT = 200
+
+
 def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
@@ -71,7 +74,7 @@ def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
         encoding="utf-8",
     )
     (output_dir / "feed.html").write_text(
-        env.get_template("feed.html").render(items=items),
+        env.get_template("feed.html").render(items=items[:FEED_ITEM_LIMIT]),
         encoding="utf-8",
     )
     (trends_dir / "index.html").write_text(

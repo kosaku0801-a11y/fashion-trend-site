@@ -76,3 +76,26 @@ def test_build_writes_expected_files(tmp_path):
 
     detail = (tmp_path / "trends" / "week-1.html").read_text(encoding="utf-8")
     assert "本文" in detail
+
+
+def test_build_caps_feed_html_at_200_items(tmp_path):
+    items = [
+        {
+            "title": f"記事{i}",
+            "url": f"https://example.com/{i}",
+            "source": "Hypebeast",
+            "published": f"2026-08-{(i % 28) + 1:02d}T00:00:00+00:00",
+            "summary": "紹介文",
+            "image_url": None,
+        }
+        for i in range(250)
+    ]
+
+    build(tmp_path, items, [])
+
+    feed_html = (tmp_path / "feed.html").read_text(encoding="utf-8")
+    assert feed_html.count('<li>') == 200
+    assert "記事0" in feed_html
+    assert "記事199" in feed_html
+    assert "記事200" not in feed_html
+    assert "記事249" not in feed_html
