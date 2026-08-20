@@ -68,14 +68,23 @@ def load_existing_items(path: Path) -> list[dict]:
 
 
 def merge_items(existing: list[dict], new_items: list[dict]) -> list[dict]:
-    """Merges existing and new items, removing duplicates by URL and sorting by published date (descending)."""
-    seen_urls = {item["url"] for item in existing}
+    """Merges existing and new items, removing duplicates by URL and sorting by published date (descending).
+
+    data/items.jsonは手編集される可能性があるため、urlやpublishedを欠いた
+    不正な形式のアイテムがあってもKeyErrorで落ちないよう.get()で防御する。
+    urlが無い（または空の）アイテムはどの既存URLとも一致しないものとして扱い、
+    重複判定によってサイレントに除外されることはない（毎回そのまま残る）。
+    publishedが無いアイテムは空文字列扱いとなり、降順ソートで末尾に来る。
+    """
+    seen_urls = {item.get("url") for item in existing if item.get("url")}
     merged = list(existing)
     for item in new_items:
-        if item["url"] and item["url"] not in seen_urls:
+        url = item.get("url")
+        if not url or url not in seen_urls:
             merged.append(item)
-            seen_urls.add(item["url"])
-    merged.sort(key=lambda x: x["published"], reverse=True)
+            if url:
+                seen_urls.add(url)
+    merged.sort(key=lambda x: x.get("published", ""), reverse=True)
     return merged
 
 

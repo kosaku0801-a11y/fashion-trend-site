@@ -85,6 +85,40 @@ def test_merge_items_removes_duplicates_by_url():
     ]
 
 
+def test_merge_items_ignores_missing_url_without_raising():
+    existing = [{"url": "https://example.com/a", "published": "2026-08-19T00:00:00+00:00"}]
+    new_items = [
+        {"title": "urlが無いアイテム", "published": "2026-08-20T00:00:00+00:00"},
+        {"url": "https://example.com/b", "published": "2026-08-18T00:00:00+00:00"},
+    ]
+    merged = merge_items(existing, new_items)
+    # urlの無いアイテムも消えずに残る（重複判定の対象外として扱われる）
+    assert len(merged) == 3
+    urls = [item.get("url") for item in merged]
+    assert "https://example.com/a" in urls
+    assert "https://example.com/b" in urls
+
+
+def test_merge_items_sorts_missing_published_last():
+    existing = []
+    new_items = [
+        {"url": "https://example.com/no-date"},  # publishedキーが無い
+        {"url": "https://example.com/a", "published": "2026-08-20T00:00:00+00:00"},
+    ]
+    merged = merge_items(existing, new_items)
+    assert [item["url"] for item in merged] == [
+        "https://example.com/a",
+        "https://example.com/no-date",
+    ]
+
+
+def test_merge_items_existing_missing_url_does_not_raise():
+    existing = [{"title": "既存だがurlが無い", "published": "2026-08-19T00:00:00+00:00"}]
+    new_items = [{"url": "https://example.com/b", "published": "2026-08-20T00:00:00+00:00"}]
+    merged = merge_items(existing, new_items)
+    assert len(merged) == 2
+
+
 def test_load_existing_items_returns_empty_list_when_missing(tmp_path):
     missing_path = tmp_path / "items.json"
     assert load_existing_items(missing_path) == []
