@@ -1,7 +1,14 @@
 import json
 from unittest.mock import patch
 
-from scripts.fetch_feeds import fetch_source, parse_feed, load_existing_items, merge_items, save_items
+from scripts.fetch_feeds import (
+    _is_excluded,
+    fetch_source,
+    parse_feed,
+    load_existing_items,
+    merge_items,
+    save_items,
+)
 
 SAMPLE_RSS = """<?xml version="1.0" encoding="UTF-8"?>
 <rss version="2.0">
@@ -242,3 +249,76 @@ def test_fetch_source_returns_items_on_success():
     with patch("scripts.fetch_feeds.parse_feed", return_value=fake_items):
         result = fetch_source(source)
     assert result == fake_items
+
+
+def test_is_excluded_true_for_criminal_news_keyword_in_title():
+    # 過去に実名入り刑事事件報道記事が混入した際と同種のパターン（タイトルに事件関連語）
+    item = {"title": "〇〇容疑者を書類送検、△△の疑い", "summary": ""}
+    assert _is_excluded(item) is True
+
+
+def test_is_excluded_false_for_normal_fashion_item():
+    item = {
+        "title": "Marmot 2026AW コレクション",
+        "summary": "「マーモット（Marmot）」が発表した2026年秋冬コレクション。",
+    }
+    assert _is_excluded(item) is False
+
+
+def test_is_excluded_true_for_education_event_announcement():
+    # QAレビューで実際に混入が確認された非ファッション記事(教育イベント告知)
+    item = {
+        "title": "「創造性とAIは学修成果を高めるのか」　アドビが教育イベントを筑波大学で開催",
+        "summary": "",
+    }
+    assert _is_excluded(item) is True
+
+
+def test_is_excluded_true_for_corporate_b2b_service_announcement():
+    # QAレビューで実際に混入が確認された非ファッション記事(法人向けサービス告知)
+    item = {
+        "title": "良品計画がオフィスに必要な備品をセット販売する法人向けサービスをスタート",
+        "summary": "",
+    }
+    assert _is_excluded(item) is True
+
+
+def test_is_excluded_true_for_anime_announcement_unrelated_to_fashion():
+    # QAレビューで実際に混入が確認された非ファッション記事(アニメ番組の発表)
+    item = {
+        "title": "TOHO Animation Sets October Debut for 'The Apothecary Diaries' Season 3",
+        "summary": "",
+    }
+    assert _is_excluded(item) is True
+
+
+def test_is_excluded_false_for_legitimate_fashion_anime_collaboration():
+    # 「アニメ」という単語自体はブロックリストに含めていない。
+    # 本番データに実在する正当なファッション×アニメコラボ記事が誤除外されないことを確認する。
+    item = {
+        "title": "コンバース トウキョウがまどマギと初コラボ　アートTシャツやアクセサリーなど発売",
+        "summary": "「コンバース トウキョウ（CONVERSE TOKYO）」が、アニメ「魔法少女まどか☆マギカ」との"
+        "初のコラボレーションアイテムを発売する。",
+    }
+    assert _is_excluded(item) is False
+
+
+def test_fetch_source_filters_out_excluded_items():
+    source = {"name": "Fashionsnap", "url": "https://example.com/feed.xml"}
+    fake_items = [
+        {
+            "url": "https://example.com/fashion",
+            "title": "普通のファッション記事",
+            "summary": "新作コレクションを発表した。",
+            "published": "2026-08-20T00:00:00+00:00",
+        },
+        {
+            "url": "https://example.com/incident",
+            "title": "タレントが書類送検",
+            "summary": "",
+            "published": "2026-08-20T00:00:00+00:00",
+        },
+    ]
+    with patch("scripts.fetch_feeds.parse_feed", return_value=fake_items):
+        result = fetch_source(source)
+    assert [item["url"] for item in result] == ["https://example.com/fashion"]

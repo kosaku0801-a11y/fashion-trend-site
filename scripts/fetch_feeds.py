@@ -121,12 +121,68 @@ def save_items(items: list[dict], path: Path) -> None:
         json.dump(items, f, ensure_ascii=False, indent=2)
 
 
+# 非ファッション記事を弾くための、簡易かつ不完全なブロックリスト。
+#
+# 経緯: 過去に実名入りの刑事事件報道記事が1件、Fashionsnapの一般フィード経由で
+# 混入し、そのときは手動除外のみで対応した（恒久フィルタは別タスクと決定）。
+# その後QAレビューで、同一の構造的原因（情報源のフィルタ不在）による混入が
+# 教育イベント・法人向けサービス・アニメ関連announcementで複数件再発している
+# ことが確認されたため、最低限のガードとして導入する。
+#
+# 明らかに非ファッションと分かるキーワードのみを対象にした簡易な文字列一致
+# であり、頑健な分類器ではない。今後の精度向上（許可リスト化・分類器の導入等）
+# は別タスクとする。
+#
+# 「アニメ」という単語自体は含めていない: 実データを確認した結果、
+# 「コンバース トウキョウがまどマギと初コラボ」「グラニフが『呪術廻戦』とコラボ」
+# のような正当なファッション×アニメコラボ記事の本文に
+# 「アニメ『〜』とのコラボレーション」という言い回しで頻出することが分かり、
+# 誤除外のリスクが高いと判断したため。英語の"Animation"はTOHO Animationの
+# ようなアニメ制作会社名・アニメ発表記事にのみ出現し、確認した実データの
+# コラボ記事タイトル・本文には出現しなかったため採用している。
+EXCLUDE_KEYWORDS = [
+    # 犯罪・司法関連の報道（芸能人等の事件報道がフィードに混入することがある）
+    "逮捕",
+    "書類送検",
+    "送検",
+    "容疑",
+    "起訴",
+    "有罪",
+    "訴訟",
+    "迷惑防止条例",
+    # ファッション商品と無関係な教育・法人向けサービス等のお知らせ
+    "教育イベント",
+    "法人向けサービス",
+    # アニメ・エンタメの発表記事（ファッション商品とのコラボは対象に含めない。上記コメント参照）
+    "Animation",
+]
+
+
+def _is_excluded(item: dict) -> bool:
+    """簡易・不完全な非ファッション記事フィルタ.
+
+    タイトル・概要のいずれかにEXCLUDE_KEYWORDSのキーワードが含まれる場合、
+    非ファッション記事とみなして除外する。頑健な分類器ではなく、明らかな
+    ケースのみを弾くための最低限のガードである（EXCLUDE_KEYWORDSのコメント参照）。
+    """
+    text = f"{item.get('title', '')} {item.get('summary', '')}"
+    return any(keyword in text for keyword in EXCLUDE_KEYWORDS)
+
+
 def fetch_source(source: dict) -> list[dict]:
     try:
-        return parse_feed(source["url"], source["name"])
+        items = parse_feed(source["url"], source["name"])
     except Exception as exc:  # noqa: BLE001 - 1メディアの失敗で全体を止めない
         logger.warning("failed to fetch %s: %s", source["name"], exc)
         return []
+
+    kept = []
+    for item in items:
+        if _is_excluded(item):
+            logger.info("excluded non-fashion item (%s): %s", source["name"], item.get("title"))
+        else:
+            kept.append(item)
+    return kept
 
 
 def main() -> None:
