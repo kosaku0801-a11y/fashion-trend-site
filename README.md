@@ -13,8 +13,8 @@ pip install -r requirements-dev.txt
 ## 手動実行
 
 ```bash
-python scripts/fetch_feeds.py
-python scripts/build_site.py
+python -m scripts.fetch_feeds
+python -m scripts.build_site
 ```
 
 ## テスト
@@ -22,3 +22,11 @@ python scripts/build_site.py
 ```bash
 pytest
 ```
+
+## 運用メモ
+
+- GitHub Actionsが1日3回（1時・9時・17時 UTC）走り、`main`ブランチに直接コミット・pushする。
+  ローカルで変更をpushする前には、必ず`git pull`してから作業すること（そうしないとpushが
+  リジェクトされることがある）。
+- 公開URL: https://kosaku0801-a11y.github.io/fashion-trend-site/
+- `docs/`はビルドの生成物。手で編集しないこと（`build_site.py`を実行するたびに上書きされる）。
