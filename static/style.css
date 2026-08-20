@@ -433,6 +433,17 @@ main {
   margin: 1.1rem 0;
 }
 
+.article-body a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.article-body a:hover,
+.article-body a:focus-visible {
+  text-decoration-thickness: 2px;
+}
+
 /* ---- フッター ---- */
 
 .site-footer {
