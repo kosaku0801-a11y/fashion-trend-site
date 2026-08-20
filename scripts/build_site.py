@@ -69,6 +69,15 @@ def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
     trends_dir = output_dir / "trends"
     trends_dir.mkdir(parents=True, exist_ok=True)
 
+    # リネーム・削除済みトレンド記事の古い生成物を掃除する（index.htmlは常に再生成するため対象外）
+    current_slugs = {post["slug"] for post in trends}
+    for existing_html in trends_dir.glob("*.html"):
+        if existing_html.stem != "index" and existing_html.stem not in current_slugs:
+            existing_html.unlink()
+
+    # GitHub PagesのJekyll処理を無効化する
+    (output_dir / ".nojekyll").write_text("", encoding="utf-8")
+
     (output_dir / "index.html").write_text(
         env.get_template("index.html").render(items=items[:10], trends=trends[:3]),
         encoding="utf-8",

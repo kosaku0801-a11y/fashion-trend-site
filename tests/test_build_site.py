@@ -99,3 +99,26 @@ def test_build_caps_feed_html_at_200_items(tmp_path):
     assert "記事199" in feed_html
     assert "記事200" not in feed_html
     assert "記事249" not in feed_html
+
+
+def test_build_removes_stale_trend_detail_pages(tmp_path):
+    trends_dir = tmp_path / "trends"
+    trends_dir.mkdir(parents=True)
+    # リネーム・削除済みの古い生成物を模擬する
+    (trends_dir / "old-slug.html").write_text("<p>古い記事</p>", encoding="utf-8")
+    (trends_dir / "index.html").write_text("stale index", encoding="utf-8")
+
+    trends = [{"title": "現行記事", "date": "2026-08-20", "slug": "current-slug", "html": "<p>本文</p>"}]
+
+    build(tmp_path, [], trends)
+
+    assert not (trends_dir / "old-slug.html").exists()
+    assert (trends_dir / "current-slug.html").exists()
+    assert (trends_dir / "index.html").exists()
+
+
+def test_build_creates_nojekyll_file(tmp_path):
+    build(tmp_path, [], [])
+    nojekyll = tmp_path / ".nojekyll"
+    assert nojekyll.exists()
+    assert nojekyll.read_text(encoding="utf-8") == ""
