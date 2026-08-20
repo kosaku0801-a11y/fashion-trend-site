@@ -1,4 +1,5 @@
 feedparser>=6.0.11,<7
 Jinja2>=3.1,<4
+# ローカル開発環境がPython 3.9のため、Python 3.9との互換性維持を目的に<1.1に固定している
 python-frontmatter>=1.0,<1.1
 Markdown>=3.6,<4
