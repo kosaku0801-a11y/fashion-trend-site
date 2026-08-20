@@ -5,8 +5,10 @@ from __future__ import annotations
 import calendar
 import json
 import logging
+import re
 import socket
 from datetime import datetime, timezone
+from html import unescape
 from pathlib import Path
 
 import feedparser
@@ -51,12 +53,36 @@ def _to_iso(struct_time) -> str:
     return dt.isoformat()
 
 
+# description(summary)内の最初の<img src="...">からURLを取り出す正規表現。
+# 属性値はダブルクオート・シングルクオートどちらの場合にも対応する。
+_IMG_SRC_RE = re.compile(r'<img[^>]*\ssrc=["\']([^"\']+)["\']', re.IGNORECASE)
+
+
+def _extract_image_from_html(html_text: str | None) -> str | None:
+    """HTML断片（RSSのdescription/summary）内の最初の<img src="...">からURLを抽出する.
+
+    Fashionsnap・Hypebeastとも、画像はmedia:thumbnail/media:contentのような
+    RSS拡張要素ではなく、description内に埋め込まれた<img>タグとしてのみ提供される
+    （実際のRSSを取得して確認済み）。抽出したURLはXMLの二重エンティティエスケープ
+    （例: Hypebeastのクエリ文字列中の`&amp;`）を`unescape()`で解いたうえで、
+    `_is_safe_url()`でスキームを検証する。安全でなければNoneを返す。
+    """
+    match = _IMG_SRC_RE.search(html_text or "")
+    if not match:
+        return None
+    url = unescape(match.group(1))
+    return url if _is_safe_url(url) else None
+
+
 def _extract_image(entry) -> str | None:
     if entry.get("media_thumbnail"):
-        return entry["media_thumbnail"][0].get("url")
+        url = entry["media_thumbnail"][0].get("url")
+        return url if _is_safe_url(url) else None
     if entry.get("media_content"):
-        return entry["media_content"][0].get("url")
-    return None
+        url = entry["media_content"][0].get("url")
+        return url if _is_safe_url(url) else None
+    # フォールバック: media拡張要素が無い場合、description内のimgタグから抽出する
+    return _extract_image_from_html(entry.get("summary", ""))
 
 
 def load_existing_items(path: Path) -> list[dict]:

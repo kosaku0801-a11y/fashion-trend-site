@@ -72,6 +72,100 @@ def test_parse_feed_rejects_javascript_image_url_scheme():
     assert items[0]["image_url"] is None
 
 
+def test_parse_feed_extracts_image_from_description_img_tag():
+    # Fashionsnap/Hypebeast両方の実データはmedia:thumbnail/media:content拡張要素を使わず、
+    # descriptionの先頭に<img src="...">を埋め込み、その後ろに本文が続く形式で画像を提供する。
+    rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>Sample Feed</title>
+<item>
+<title>サンプル記事</title>
+<link>https://example.com/item-with-image</link>
+<description>&lt;img src="https://example.com/photo.jpg" /&gt; お笑いトリオの記事本文がここに続きます。</description>
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(rss, "SampleMedia")
+    assert len(items) == 1
+    assert items[0]["image_url"] == "https://example.com/photo.jpg"
+
+
+def test_parse_feed_unescapes_query_string_ampersands_in_description_image():
+    # Hypebeastの実データはクエリ文字列付きの画像URLを持ち、XML上は`&amp;amp;`と
+    # 二重エスケープされているため、feedparserが1段階デコードした後のsummaryには
+    # `&amp;`が残る。html.unescape()でさらに1段階デコードして実URLに戻す必要がある。
+    rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>Sample Feed</title>
+<item>
+<title>サンプル記事2</title>
+<link>https://example.com/item-with-query-image</link>
+<description>&lt;img src="https://example.com/photo.jpg?w=800&amp;amp;q=90" /&gt; 本文です。</description>
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(rss, "SampleMedia")
+    assert items[0]["image_url"] == "https://example.com/photo.jpg?w=800&q=90"
+
+
+def test_parse_feed_rejects_unsafe_scheme_in_description_image():
+    rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>Sample Feed</title>
+<item>
+<title>危険な画像リンク（description内）</title>
+<link>https://example.com/item-unsafe-image</link>
+<description>&lt;img src="javascript:alert(1)" /&gt; 本文です。</description>
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(rss, "SampleMedia")
+    assert items[0]["image_url"] is None
+
+
+def test_parse_feed_still_prefers_media_thumbnail_when_present():
+    # media:thumbnail/media:content経由の既存の抽出パスが、description内img
+    # フォールバックの追加によって壊れていないことを確認する回帰テスト。
+    rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:media="http://search.yahoo.com/mrss/">
+<channel>
+<title>Sample Feed</title>
+<item>
+<title>media:thumbnail付き記事</title>
+<link>https://example.com/item-media-thumbnail</link>
+<description>&lt;img src="https://example.com/should-not-be-used.jpg" /&gt; 本文です。</description>
+<media:thumbnail url="https://example.com/thumbnail.jpg" />
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(rss, "SampleMedia")
+    assert items[0]["image_url"] == "https://example.com/thumbnail.jpg"
+
+
+def test_parse_feed_no_image_anywhere_returns_none_without_crashing():
+    rss = """<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+<title>Sample Feed</title>
+<item>
+<title>画像の無い記事</title>
+<link>https://example.com/item-no-image</link>
+<description>画像を含まない普通の説明文です。</description>
+<pubDate>Thu, 20 Aug 2026 03:00:00 GMT</pubDate>
+</item>
+</channel>
+</rss>"""
+    items = parse_feed(rss, "SampleMedia")
+    assert items[0]["image_url"] is None
+
+
 def test_merge_items_removes_duplicates_by_url():
     existing = [{"url": "https://example.com/a", "published": "2026-08-19T00:00:00+00:00"}]
     new_items = [
