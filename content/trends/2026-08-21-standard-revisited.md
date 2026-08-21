@@ -1,6 +1,12 @@
 ---
 title: "定番に一手だけ加えた一週間、その足元で起きていたこと"
 date: 2026-08-21
+images:
+  - https://www.fashionsnap.com/article/2026-08-21/ittala-cafeaalto/
+  - https://www.fashionsnap.com/article/2026-08-21/aquascutum-medicom-toy/
+  - https://www.fashionsnap.com/article/2026-08-21/lappartement-20th/
+  - https://www.fashionsnap.com/article/2026-08-20/cool-japan-fund-restructuring/
+  - https://hypebeast.com/2026/8/supreme-chief-creative-officer-steps-down-after-22-years
 ---
 
 今週も新作情報は例年どおりの量で届いた。けれども並べてみると、目を引いたのは新作そのものではない。

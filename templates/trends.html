@@ -9,6 +9,11 @@
 <div class="trend-grid">
 {% for post in trends %}
   <a class="trend-card" href="{{ post.slug }}.html">
+    {% if post.images %}
+    <div class="trend-card-media">
+      <img src="{{ post.images[0].image_url }}" alt="{{ post.images[0].title }}">
+    </div>
+    {% endif %}
     <div class="trend-date">{{ post.date }}</div>
     <div class="trend-title">{{ post.title }}</div>
   </a>

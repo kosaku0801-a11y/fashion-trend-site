@@ -21,6 +21,11 @@
 </div>
 {% if trends %}
 <a class="trend-feature" href="trends/{{ trends[0].slug }}.html">
+  {% if trends[0].images %}
+  <div class="trend-feature-media">
+    <img src="{{ trends[0].images[0].image_url }}" alt="{{ trends[0].images[0].title }}">
+  </div>
+  {% endif %}
   <div class="trend-feature-date">{{ trends[0].date }}</div>
   <div class="trend-feature-title">{{ trends[0].title }}</div>
   <p class="trend-feature-lead">{{ trends[0].lead_html | excerpt }}</p>
@@ -29,6 +34,11 @@
 <div class="trend-grid trend-grid-sub">
 {% for post in trends[1:] %}
   <a class="trend-card" href="trends/{{ post.slug }}.html">
+    {% if post.images %}
+    <div class="trend-card-media">
+      <img src="{{ post.images[0].image_url }}" alt="{{ post.images[0].title }}">
+    </div>
+    {% endif %}
     <div class="trend-date">{{ post.date }}</div>
     <div class="trend-title">{{ post.title }}</div>
   </a>

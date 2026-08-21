@@ -14,6 +14,21 @@
     {{ post.toc | safe }}
   </nav>
   {% endif %}
+  {% if post.images %}
+  <div class="article-image-gallery">
+    <div class="article-image-gallery-label">紹介したアイテム</div>
+    <div class="article-image-grid">
+    {% for img in post.images %}
+      <a class="article-image-card" href="{{ img.url }}">
+        <div class="article-image-thumb">
+          <img src="{{ img.image_url }}" alt="{{ img.title }}">
+        </div>
+        <span class="source-badge">{{ img.source }}</span>
+      </a>
+    {% endfor %}
+    </div>
+  </div>
+  {% endif %}
   <div class="article-body">{{ post.html | safe }}</div>
 </article>
 

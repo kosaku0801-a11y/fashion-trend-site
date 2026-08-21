@@ -75,9 +75,30 @@ def _extract_lead_markdown(markdown_text: str) -> str:
     return "\n".join(lead_lines).strip()
 
 
-def load_trend_posts(content_dir: Path) -> list[dict]:
+def _resolve_trend_images(image_urls: list[str], items_by_url: dict[str, dict]) -> list[dict]:
+    """トレンド記事のfrontmatterで指定されたURLを、data/items.jsonのアイテムに引き当てる.
+
+    画像を著作権上の引用として成立させるため、新着カードと同じ「出典・元記事リンク付き」の
+    形で表示する。該当アイテムが見つからない、または画像を持たない場合は静かにスキップする
+    （記事の削除・データの入れ替わりでリンク切れになっても、ビルド自体は失敗させない）。
+    """
+    resolved = []
+    for url in image_urls:
+        item = items_by_url.get(url)
+        if item and item.get("image_url"):
+            resolved.append({
+                "image_url": item["image_url"],
+                "source": item.get("source", ""),
+                "url": item["url"],
+                "title": item.get("title", ""),
+            })
+    return resolved
+
+
+def load_trend_posts(content_dir: Path, items: list[dict] = ()) -> list[dict]:
     if not content_dir.exists():
         return []
+    items_by_url = {item["url"]: item for item in items}
     posts = []
     for p in sorted(content_dir.glob("*.md")):
         post = frontmatter.load(p)
@@ -90,6 +111,7 @@ def load_trend_posts(content_dir: Path) -> list[dict]:
             "slug": p.stem,
             "html": html,
             "lead_html": lead_html,
+            "images": _resolve_trend_images(post.get("images", []), items_by_url),
             "toc": converter.toc if converter.toc_tokens else None,
         })
     posts.sort(key=lambda x: str(x["date"]), reverse=True)
@@ -188,7 +210,7 @@ def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
 def main() -> None:
     root = Path(__file__).resolve().parent.parent
     items = load_items(root / "data" / "items.json")
-    trends = load_trend_posts(root / "content" / "trends")
+    trends = load_trend_posts(root / "content" / "trends", items)
     build(root / "docs", items, trends)
 
 

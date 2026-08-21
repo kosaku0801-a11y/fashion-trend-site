@@ -197,6 +197,19 @@ main {
   letter-spacing: 0.04em;
 }
 
+.trend-feature-media {
+  margin: -1.8rem -2rem 1.2rem;
+  aspect-ratio: 21 / 9;
+  overflow: hidden;
+  background: #1a1a1a;
+}
+
+.trend-feature-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .trend-feature-title {
   font-family: var(--display);
   font-weight: 900;
@@ -456,6 +469,19 @@ main {
   line-height: 1.5;
 }
 
+.trend-card-media {
+  margin: -1.1rem -1.2rem 0.9rem;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: var(--paper-dim);
+}
+
+.trend-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .trend-empty {
   padding: 2.2rem 1.4rem;
   border: 1px dashed var(--line);
@@ -536,6 +562,50 @@ main {
 .article-toc a:hover,
 .article-toc a:focus-visible {
   color: var(--accent);
+}
+
+.article-image-gallery {
+  margin-top: 1.6rem;
+}
+
+.article-image-gallery-label {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--mute);
+  margin-bottom: 0.6rem;
+}
+
+.article-image-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+  gap: 0.8rem;
+}
+
+.article-image-card {
+  position: relative;
+  display: block;
+  text-decoration: none;
+}
+
+.article-image-thumb {
+  aspect-ratio: 4 / 3;
+  background: var(--paper-dim);
+  overflow: hidden;
+}
+
+.article-image-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.article-image-card .source-badge {
+  position: absolute;
+  bottom: 0.4rem;
+  left: 0.4rem;
+  background: var(--paper);
+  font-size: 0.6rem;
 }
 
 .article-body {

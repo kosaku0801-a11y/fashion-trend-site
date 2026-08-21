@@ -134,6 +134,47 @@ def test_load_trend_posts_lead_html_equals_full_body_when_no_headings(tmp_path):
     assert "本文のみで見出しは無い。" in posts[0]["lead_html"]
 
 
+def test_load_trend_posts_resolves_images_from_frontmatter_urls(tmp_path):
+    (tmp_path / "post.md").write_text(
+        "---\ntitle: 画像付き記事\ndate: 2026-08-21\n"
+        "images:\n  - https://example.com/a\n  - https://example.com/b\n"
+        "---\n本文\n",
+        encoding="utf-8",
+    )
+    items = [
+        {"url": "https://example.com/a", "image_url": "https://example.com/a.jpg", "source": "Hypebeast", "title": "記事A"},
+        {"url": "https://example.com/b", "image_url": "https://example.com/b.jpg", "source": "Fashionsnap", "title": "記事B"},
+    ]
+    posts = load_trend_posts(tmp_path, items)
+    assert [img["image_url"] for img in posts[0]["images"]] == ["https://example.com/a.jpg", "https://example.com/b.jpg"]
+    assert posts[0]["images"][0]["source"] == "Hypebeast"
+    assert posts[0]["images"][0]["url"] == "https://example.com/a"
+    assert posts[0]["images"][0]["title"] == "記事A"
+
+
+def test_load_trend_posts_skips_urls_not_found_or_without_image(tmp_path):
+    (tmp_path / "post.md").write_text(
+        "---\ntitle: 画像付き記事\ndate: 2026-08-21\n"
+        "images:\n  - https://example.com/missing\n  - https://example.com/no-image\n"
+        "---\n本文\n",
+        encoding="utf-8",
+    )
+    items = [
+        {"url": "https://example.com/no-image", "image_url": None, "source": "Hypebeast", "title": "画像なし記事"},
+    ]
+    posts = load_trend_posts(tmp_path, items)
+    assert posts[0]["images"] == []
+
+
+def test_load_trend_posts_images_empty_when_no_images_field(tmp_path):
+    (tmp_path / "post.md").write_text(
+        "---\ntitle: 画像指定なし記事\ndate: 2026-08-21\n---\n本文\n",
+        encoding="utf-8",
+    )
+    posts = load_trend_posts(tmp_path)
+    assert posts[0]["images"] == []
+
+
 def test_build_writes_expected_files(tmp_path):
     items = [{
         "title": "新作スニーカー登場",
