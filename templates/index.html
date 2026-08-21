@@ -23,7 +23,7 @@
 <a class="trend-feature" href="trends/{{ trends[0].slug }}.html">
   <div class="trend-feature-date">{{ trends[0].date }}</div>
   <div class="trend-feature-title">{{ trends[0].title }}</div>
-  <p class="trend-feature-lead">{{ trends[0].html | excerpt }}</p>
+  <p class="trend-feature-lead">{{ trends[0].lead_html | excerpt }}</p>
 </a>
 {% if trends[1:] %}
 <div class="trend-grid trend-grid-sub">

@@ -113,6 +113,27 @@ def test_load_trend_posts_toc_is_none_when_no_headings(tmp_path):
     assert posts[0]["toc"] is None
 
 
+def test_load_trend_posts_lead_html_excludes_text_after_first_heading(tmp_path):
+    (tmp_path / "post.md").write_text(
+        "---\ntitle: 見出しのある記事\ndate: 2026-08-21\n---\n"
+        "導入の段落です。\n\n## 最初の見出し\n見出し以降の本文A\n\n## 次の見出し\n見出し以降の本文B\n",
+        encoding="utf-8",
+    )
+    posts = load_trend_posts(tmp_path)
+    assert "導入の段落です" in posts[0]["lead_html"]
+    assert "最初の見出し" not in posts[0]["lead_html"]
+    assert "見出し以降の本文A" not in posts[0]["lead_html"]
+
+
+def test_load_trend_posts_lead_html_equals_full_body_when_no_headings(tmp_path):
+    (tmp_path / "post.md").write_text(
+        "---\ntitle: 見出しのない記事\ndate: 2026-08-21\n---\n本文のみで見出しは無い。\n",
+        encoding="utf-8",
+    )
+    posts = load_trend_posts(tmp_path)
+    assert "本文のみで見出しは無い。" in posts[0]["lead_html"]
+
+
 def test_build_writes_expected_files(tmp_path):
     items = [{
         "title": "新作スニーカー登場",
@@ -329,8 +350,8 @@ def test_build_index_trend_section_appears_before_new_arrivals_section(tmp_path)
 
 def test_build_index_latest_trend_rendered_as_feature_card(tmp_path):
     trends = [
-        {"title": "今週のトレンド", "date": "2026-08-20", "slug": "week-1", "html": "<p>本文リード</p>"},
-        {"title": "先週のトレンド", "date": "2026-08-13", "slug": "week-0", "html": "<p>先週の本文</p>"},
+        {"title": "今週のトレンド", "date": "2026-08-20", "slug": "week-1", "html": "<p>本文リード</p>", "lead_html": "<p>本文リード</p>"},
+        {"title": "先週のトレンド", "date": "2026-08-13", "slug": "week-0", "html": "<p>先週の本文</p>", "lead_html": "<p>先週の本文</p>"},
     ]
     build(tmp_path, [], trends)
     index_html = (tmp_path / "index.html").read_text(encoding="utf-8")

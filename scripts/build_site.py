@@ -61,6 +61,20 @@ def load_items(path: Path) -> list[dict]:
         return json.load(f)
 
 
+def _extract_lead_markdown(markdown_text: str) -> str:
+    """本文のうち、最初の見出し（#系記法）より前の部分だけを返す.
+
+    トップページのフィーチャーカードは記事の導入部だけをリード文として見せたい。
+    見出しが無い記事では全文がそのまま返るため、従来通り本文全体が使われる。
+    """
+    lead_lines = []
+    for line in markdown_text.split("\n"):
+        if line.lstrip().startswith("#"):
+            break
+        lead_lines.append(line)
+    return "\n".join(lead_lines).strip()
+
+
 def load_trend_posts(content_dir: Path) -> list[dict]:
     if not content_dir.exists():
         return []
@@ -69,11 +83,13 @@ def load_trend_posts(content_dir: Path) -> list[dict]:
         post = frontmatter.load(p)
         converter = md.Markdown(extensions=["toc"])
         html = converter.convert(post.content)
+        lead_html = md.markdown(_extract_lead_markdown(post.content))
         posts.append({
             "title": post.get("title", p.stem),
             "date": str(post.get("date", "")),
             "slug": p.stem,
             "html": html,
+            "lead_html": lead_html,
             "toc": converter.toc if converter.toc_tokens else None,
         })
     posts.sort(key=lambda x: str(x["date"]), reverse=True)
