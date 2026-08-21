@@ -119,6 +119,8 @@ def load_trend_posts(content_dir: Path, items: list[dict] = ()) -> list[dict]:
 
 
 FEED_ITEM_LIMIT = 200
+TOP_GRID_ITEM_LIMIT = 15
+TOP_TREND_LIMIT = 5
 
 
 def _pick_hero(items: list[dict]) -> tuple[dict | None, list[dict]]:
@@ -185,9 +187,11 @@ def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
             if asset.is_file():
                 shutil.copy2(asset, static_out / asset.name)
 
-    hero, grid_items = _pick_hero(items[:10])
+    hero, grid_items = _pick_hero(items[:TOP_GRID_ITEM_LIMIT + 1])
     (output_dir / "index.html").write_text(
-        env.get_template("index.html").render(hero=hero, items=grid_items[:9], trends=trends[:3]),
+        env.get_template("index.html").render(
+            hero=hero, items=grid_items[:TOP_GRID_ITEM_LIMIT], trends=trends[:TOP_TREND_LIMIT]
+        ),
         encoding="utf-8",
     )
     (output_dir / "feed.html").write_text(

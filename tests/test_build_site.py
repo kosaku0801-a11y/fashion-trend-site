@@ -429,6 +429,40 @@ def test_build_index_new_arrival_card_shows_source_badge(tmp_path):
     assert "Hypebeast" in index_html
 
 
+def test_build_index_grid_shows_up_to_15_items(tmp_path):
+    items = [
+        {
+            "title": f"記事{i}",
+            "url": f"https://example.com/{i}",
+            "source": "Fashionsnap",
+            "published": f"2026-08-{(i % 28) + 1:02d}T00:00:00+00:00",
+            "summary": "紹介文",
+            "image_url": "https://example.com/photo.jpg" if i == 0 else None,
+        }
+        for i in range(20)
+    ]
+    build(tmp_path, items, [])
+    index_html = (tmp_path / "index.html").read_text(encoding="utf-8")
+    # 記事0はヒーローに使われるため、グリッドには記事1〜15の15件が表示される
+    assert index_html.count('class="card"') == 15
+    assert "記事1" in index_html
+    assert "記事15" in index_html
+    assert "記事16" not in index_html
+
+
+def test_build_index_trends_shows_up_to_5_posts(tmp_path):
+    trends = [
+        {"title": f"トレンド記事{i}", "date": f"2026-08-{20 - i:02d}", "slug": f"post-{i}", "html": "<p>本文</p>", "lead_html": "<p>本文</p>"}
+        for i in range(7)
+    ]
+    build(tmp_path, [], trends)
+    index_html = (tmp_path / "index.html").read_text(encoding="utf-8")
+    # トレンド記事0はフィーチャーカード、1〜4がサブカード（計5件）
+    assert "トレンド記事0" in index_html
+    assert "トレンド記事4" in index_html
+    assert "トレンド記事5" not in index_html
+
+
 def test_build_index_empty_items_renders_without_hero_and_without_crashing(tmp_path):
     build(tmp_path, [], [])
     index_html = (tmp_path / "index.html").read_text(encoding="utf-8")
