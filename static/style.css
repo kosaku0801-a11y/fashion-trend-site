@@ -105,6 +105,22 @@ main {
   margin: 2.6rem 0 1.1rem;
   padding-bottom: 0.5rem;
   border-bottom: 2px solid var(--ink);
+  opacity: 0.4;
+  transform: translateX(-16px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+
+.section-head.is-visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .section-head {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 
 .section-head h2 {
@@ -137,12 +153,14 @@ main {
   color: var(--paper);
   overflow: hidden;
   text-decoration: none;
-  display: block;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  align-items: stretch;
 }
 
 .hero .hero-media {
   position: relative;
-  aspect-ratio: 4 / 3;
+  min-height: 340px;
   background: #1a1a1a;
 }
 
@@ -155,6 +173,20 @@ main {
 
 .hero .hero-body {
   padding: 2rem 2.2rem 2.4rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+@media (max-width: 720px) {
+  .hero {
+    grid-template-columns: 1fr;
+  }
+
+  .hero .hero-media {
+    aspect-ratio: 4 / 3;
+    min-height: 0;
+  }
 }
 
 .hero .eyebrow {
@@ -188,6 +220,12 @@ main {
   border-left: 6px solid var(--accent);
   text-decoration: none;
   color: var(--ink);
+  transition: transform 0.18s ease;
+}
+
+.trend-feature:hover,
+.trend-feature:focus-visible {
+  transform: translateY(-3px);
 }
 
 .trend-feature-date {
@@ -251,6 +289,35 @@ main {
   background: var(--paper);
 }
 
+.hero .stamp {
+  top: 1.4rem;
+  right: 1.4rem;
+  font-size: 0.95rem;
+  padding: 0.4rem 0.9rem;
+  border-width: 3px;
+  animation: stamp-drop 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes stamp-drop {
+  0% {
+    transform: translateY(-160px) rotate(-8deg) scale(1.5);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(0) rotate(-8deg) scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero .stamp {
+    animation: none;
+  }
+}
+
 /* ---- カードグリッド（新着情報） ---- */
 
 .card-grid {
@@ -267,13 +334,25 @@ main {
   border: 1px solid var(--line);
   text-decoration: none;
   color: var(--ink);
-  transition: transform 0.12s ease, border-color 0.12s ease;
+  transition: transform 0.18s ease, border-color 0.12s ease;
+}
+
+.card:nth-child(3n+1) {
+  transform: rotate(-1.6deg);
+}
+
+.card:nth-child(3n+2) {
+  transform: rotate(1.2deg);
+}
+
+.card:nth-child(3n) {
+  transform: rotate(-0.9deg);
 }
 
 .card:hover,
 .card:focus-visible {
   border-color: var(--ink);
-  transform: translateY(-2px);
+  transform: rotate(0deg) translateY(-3px);
 }
 
 .card .thumb {
@@ -454,6 +533,20 @@ main {
   border-left: 4px solid var(--accent);
   text-decoration: none;
   color: var(--ink);
+  transition: transform 0.18s ease;
+}
+
+.trend-card:nth-child(odd) {
+  transform: rotate(-1.3deg);
+}
+
+.trend-card:nth-child(even) {
+  transform: rotate(1.3deg);
+}
+
+.trend-card:hover,
+.trend-card:focus-visible {
+  transform: rotate(0deg) translateY(-3px);
 }
 
 .trend-card .trend-date {
@@ -673,7 +766,9 @@ a:focus-visible,
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .card {
+  .card,
+  .trend-card,
+  .trend-feature {
     transition: none;
   }
 }
