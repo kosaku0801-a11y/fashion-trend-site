@@ -337,22 +337,24 @@ main {
   transition: transform 0.18s ease, border-color 0.12s ease;
 }
 
-.card:nth-child(3n+1) {
-  transform: rotate(-1.6deg);
-}
-
-.card:nth-child(3n+2) {
-  transform: rotate(1.2deg);
-}
-
-.card:nth-child(3n) {
-  transform: rotate(-0.9deg);
-}
-
 .card:hover,
 .card:focus-visible {
   border-color: var(--ink);
-  transform: rotate(0deg) translateY(-3px);
+}
+
+.card:nth-child(3n+1):hover,
+.card:nth-child(3n+1):focus-visible {
+  transform: rotate(-1.6deg) translateY(-3px);
+}
+
+.card:nth-child(3n+2):hover,
+.card:nth-child(3n+2):focus-visible {
+  transform: rotate(1.2deg) translateY(-3px);
+}
+
+.card:nth-child(3n):hover,
+.card:nth-child(3n):focus-visible {
+  transform: rotate(-0.9deg) translateY(-3px);
 }
 
 .card .thumb {
@@ -536,17 +538,14 @@ main {
   transition: transform 0.18s ease;
 }
 
-.trend-card:nth-child(odd) {
-  transform: rotate(-1.3deg);
+.trend-card:nth-child(odd):hover,
+.trend-card:nth-child(odd):focus-visible {
+  transform: rotate(-1.3deg) translateY(-3px);
 }
 
-.trend-card:nth-child(even) {
-  transform: rotate(1.3deg);
-}
-
-.trend-card:hover,
-.trend-card:focus-visible {
-  transform: rotate(0deg) translateY(-3px);
+.trend-card:nth-child(even):hover,
+.trend-card:nth-child(even):focus-visible {
+  transform: rotate(1.3deg) translateY(-3px);
 }
 
 .trend-card .trend-date {
