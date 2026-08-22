@@ -14,6 +14,8 @@
   --body: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Helvetica Neue", sans-serif;
   --mono: "SF Mono", "Menlo", "Courier New", monospace;
   --wordmark: "Bebas Neue", "Zen Kaku Gothic New", sans-serif;
+
+  --icon-no-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='5' width='18' height='14' rx='2'/%3E%3Ccircle cx='8.5' cy='10' r='1.6'/%3E%3Cpath d='M21 16l-5.5-5.5a2 2 0 0 0-2.8 0L3 19'/%3E%3C/svg%3E");
 }
 
 * {
@@ -386,16 +388,19 @@ main {
 }
 
 .card .thumb.no-image::after {
-  content: "NO IMAGE";
+  content: "";
   position: absolute;
   inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: var(--mono);
-  font-size: 0.65rem;
-  letter-spacing: 0.1em;
-  color: var(--mute);
+  margin: auto;
+  width: 28px;
+  height: 28px;
+  background-color: var(--mute);
+  mask-image: var(--icon-no-image);
+  -webkit-mask-image: var(--icon-no-image);
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-size: contain;
 }
 
 .card .card-body {
@@ -487,6 +492,7 @@ main {
   aspect-ratio: 4 / 3;
   background: var(--paper-dim);
   overflow: hidden;
+  position: relative;
 }
 
 .feed-item .thumb img {
@@ -496,15 +502,19 @@ main {
 }
 
 .feed-item .thumb.no-image::after {
-  content: "NO IMAGE";
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-  font-family: var(--mono);
-  font-size: 0.6rem;
-  letter-spacing: 0.08em;
-  color: var(--mute);
+  content: "";
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 22px;
+  height: 22px;
+  background-color: var(--mute);
+  mask-image: var(--icon-no-image);
+  -webkit-mask-image: var(--icon-no-image);
+  mask-repeat: no-repeat;
+  -webkit-mask-repeat: no-repeat;
+  mask-size: contain;
+  -webkit-mask-size: contain;
 }
 
 .feed-item .title {
