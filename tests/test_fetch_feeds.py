@@ -1,8 +1,10 @@
 import json
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from scripts.fetch_feeds import (
+    _backfill_og_images,
     _is_excluded,
+    fetch_og_image,
     fetch_source,
     parse_feed,
     load_existing_items,
@@ -283,6 +285,64 @@ def test_merge_items_existing_missing_url_does_not_raise():
     new_items = [{"url": "https://example.com/b", "published": "2026-08-20T00:00:00+00:00"}]
     merged = merge_items(existing, new_items)
     assert len(merged) == 2
+
+
+def _mock_response(html_bytes: bytes) -> MagicMock:
+    mock_response = MagicMock()
+    mock_response.read.return_value = html_bytes
+    mock_response.__enter__.return_value = mock_response
+    mock_response.__exit__.return_value = False
+    return mock_response
+
+
+def test_fetch_og_image_extracts_og_image_content():
+    html = b'<html><head><meta property="og:image" content="https://example.com/photo.jpg"></head></html>'
+    with patch("scripts.fetch_feeds.urllib.request.urlopen", return_value=_mock_response(html)):
+        assert fetch_og_image("https://example.com/article") == "https://example.com/photo.jpg"
+
+
+def test_fetch_og_image_supports_content_before_property_attribute_order():
+    # サイトによってはmetaタグの属性順がcontent→propertyの場合もある
+    html = b'<meta content="https://example.com/photo2.jpg" property="og:image">'
+    with patch("scripts.fetch_feeds.urllib.request.urlopen", return_value=_mock_response(html)):
+        assert fetch_og_image("https://example.com/article") == "https://example.com/photo2.jpg"
+
+
+def test_fetch_og_image_returns_none_when_tag_missing():
+    html = b"<html><head><title>no og image here</title></head></html>"
+    with patch("scripts.fetch_feeds.urllib.request.urlopen", return_value=_mock_response(html)):
+        assert fetch_og_image("https://example.com/article") is None
+
+
+def test_fetch_og_image_returns_none_on_network_error():
+    with patch("scripts.fetch_feeds.urllib.request.urlopen", side_effect=OSError("timeout")):
+        assert fetch_og_image("https://example.com/article") is None
+
+
+def test_fetch_og_image_rejects_unsafe_scheme():
+    html = b'<meta property="og:image" content="javascript:alert(1)">'
+    with patch("scripts.fetch_feeds.urllib.request.urlopen", return_value=_mock_response(html)):
+        assert fetch_og_image("https://example.com/article") is None
+
+
+def test_backfill_og_images_skips_existing_urls():
+    new_items = [
+        {"url": "https://example.com/existing", "image_url": None},
+        {"url": "https://example.com/new", "image_url": None},
+    ]
+    existing_urls = {"https://example.com/existing"}
+    with patch("scripts.fetch_feeds.fetch_og_image", return_value="https://example.com/photo.jpg") as mock_fetch:
+        _backfill_og_images(new_items, existing_urls)
+    mock_fetch.assert_called_once_with("https://example.com/new")
+    assert new_items[0]["image_url"] is None
+    assert new_items[1]["image_url"] == "https://example.com/photo.jpg"
+
+
+def test_backfill_og_images_skips_items_that_already_have_image():
+    new_items = [{"url": "https://example.com/new", "image_url": "https://example.com/existing.jpg"}]
+    with patch("scripts.fetch_feeds.fetch_og_image") as mock_fetch:
+        _backfill_og_images(new_items, set())
+    mock_fetch.assert_not_called()
 
 
 def test_load_existing_items_returns_empty_list_when_missing(tmp_path):

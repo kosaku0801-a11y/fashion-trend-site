@@ -7,6 +7,7 @@ import json
 import logging
 import re
 import socket
+import urllib.request
 from datetime import datetime, timezone
 from html import unescape
 from pathlib import Path
@@ -92,6 +93,42 @@ def _extract_image(entry) -> str | None:
     # <img>タグとして埋め込まれている（実際のフィードで確認済み）。
     content_list = entry.get("content") or [{}]
     return _extract_image_from_html(content_list[0].get("value", ""))
+
+
+# 記事ページ本体のog:image metaタグを抽出する正規表現。
+# property="og:image"の前後どちらにcontent属性が来ても対応する
+# （サイトによって属性の並び順が異なるため）。
+_OG_IMAGE_RE = re.compile(
+    r'<meta[^>]+property=["\']og:image["\'][^>]*content=["\']([^"\']+)["\']'
+    r'|<meta[^>]+content=["\']([^"\']+)["\'][^>]*property=["\']og:image["\']',
+    re.IGNORECASE,
+)
+
+_USER_AGENT = "Mozilla/5.0 (compatible; FashionTrendSiteBot/1.0)"
+
+
+def fetch_og_image(url: str, timeout: int = 10) -> str | None:
+    """記事ページ本体からog:image（OGP画像）を取得する.
+
+    Highsnobietyのように、RSS自体に画像データを一切含まないメディアが
+    あるため、RSS由来の抽出（_extract_image）で見つからなかった場合の
+    フォールバックとして使う。ネットワークエラー・タイムアウト・
+    og:imageタグの不在は、1記事の取得失敗でビルド全体を止めないよう
+    すべて静かにNoneを返す（呼び出し側は既存の画像なし表示にフォールバックする）。
+    """
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})
+        with urllib.request.urlopen(req, timeout=timeout) as res:
+            html_text = res.read(200_000).decode("utf-8", errors="ignore")
+    except Exception as exc:  # noqa: BLE001 - 1記事の取得失敗で全体を止めない
+        logger.warning("failed to fetch og:image from %s: %s", url, exc)
+        return None
+
+    match = _OG_IMAGE_RE.search(html_text)
+    if not match:
+        return None
+    image_url = unescape(match.group(1) or match.group(2))
+    return image_url if _is_safe_url(image_url) else None
 
 
 def load_existing_items(path: Path) -> list[dict]:
@@ -274,13 +311,27 @@ def fetch_source(source: dict) -> list[dict]:
     return kept
 
 
+def _backfill_og_images(new_items: list[dict], existing_urls: set[str]) -> None:
+    """新規アイテムのうち画像が無いものに、記事ページ本体からog:imageを補う（in-place更新）.
+
+    既存アイテム（existing_urls）は対象外にする。RSSは毎回直近N件を返すため、
+    絞らないと同じURLに実行のたびアクセスしてしまい、無駄なリクエストが
+    積み重なるため。
+    """
+    for item in new_items:
+        if not item.get("image_url") and item.get("url") and item["url"] not in existing_urls:
+            item["image_url"] = fetch_og_image(item["url"])
+
+
 def main() -> None:
     logging.basicConfig(level=logging.INFO)
     socket.setdefaulttimeout(30)
     existing = load_existing_items(DATA_PATH)
+    existing_urls = {item.get("url") for item in existing if item.get("url")}
     new_items: list[dict] = []
     for source in FEED_SOURCES:
         new_items.extend(fetch_source(source))
+    _backfill_og_images(new_items, existing_urls)
     merged = merge_items(existing, new_items)
     save_items(merged, DATA_PATH)
     logger.info("saved %d items (was %d)", len(merged), len(existing))
