@@ -122,6 +122,37 @@ FEED_ITEM_LIMIT = 200
 TOP_GRID_ITEM_LIMIT = 15
 TOP_TREND_LIMIT = 5
 
+# 海外メディア（Highsnobiety・Hypebeast）は1日あたりの投稿数が多く、公開日時降順の
+# 単純な並びだとトップページの新着枠が海外メディアの記事で埋まってしまう
+# （実データで新着グリッド15件中9件が海外メディアという偏りを確認した）。
+# 日本人読者向けの露出を確保するため、国内メディアの記事が母集団の一定比率を
+# 占めるよう優先的に選び出す。
+JAPANESE_SOURCES = {"Fashionsnap", "HOUYHNHNM"}
+TOP_GRID_JAPANESE_RATIO = 2 / 3
+
+
+def _prioritize_japanese(items: list[dict], limit: int, jp_ratio: float = TOP_GRID_JAPANESE_RATIO) -> list[dict]:
+    """itemsから、国内メディア（JAPANESE_SOURCES）がjp_ratio分を占めるようlimit件選び出す.
+
+    itemsは公開日時降順にソート済みであることを前提とする。国内・海外それぞれの
+    中では新しい順を維持したまま、国内メディアをjp_ratio分優先的に確保し、残り枠を
+    海外メディアで埋める（海外メディアが不足する場合は国内メディアで埋め戻す）。
+    最後に選び出した集合を公開日時降順で並べ直し、表示上は自然な新着順に見せる。
+    """
+    jp_target = round(limit * jp_ratio)
+    jp_items = [i for i in items if i.get("source") in JAPANESE_SOURCES]
+    other_items = [i for i in items if i.get("source") not in JAPANESE_SOURCES]
+
+    selected_jp = jp_items[:jp_target]
+    selected_other = other_items[: limit - len(selected_jp)]
+    combined = selected_jp + selected_other
+    if len(combined) < limit:
+        remaining_jp = jp_items[len(selected_jp):]
+        combined += remaining_jp[: limit - len(combined)]
+
+    combined.sort(key=lambda i: i.get("published", ""), reverse=True)
+    return combined
+
 
 def _pick_hero(items: list[dict]) -> tuple[dict | None, list[dict]]:
     """画像のある最新アイテムをヒーローとして選ぶ。無ければ先頭にフォールバックする.
@@ -187,7 +218,8 @@ def build(output_dir: Path, items: list[dict], trends: list[dict]) -> None:
             if asset.is_file():
                 shutil.copy2(asset, static_out / asset.name)
 
-    hero, grid_items = _pick_hero(items[:TOP_GRID_ITEM_LIMIT + 1])
+    grid_pool = _prioritize_japanese(items, TOP_GRID_ITEM_LIMIT + 1)
+    hero, grid_items = _pick_hero(grid_pool)
     (output_dir / "index.html").write_text(
         env.get_template("index.html").render(
             hero=hero, items=grid_items[:TOP_GRID_ITEM_LIMIT], trends=trends[:TOP_TREND_LIMIT]

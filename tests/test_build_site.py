@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from scripts.build_site import build, excerpt, load_items, load_trend_posts, _pick_hero, _group_by_source
+from scripts.build_site import build, excerpt, load_items, load_trend_posts, _pick_hero, _group_by_source, _prioritize_japanese
 
 
 def test_excerpt_strips_html_tags_and_entities_and_truncates():
@@ -448,6 +448,74 @@ def test_build_index_grid_shows_up_to_15_items(tmp_path):
     assert "記事1" in index_html
     assert "記事15" in index_html
     assert "記事16" not in index_html
+
+
+def test_prioritize_japanese_selects_target_ratio_of_japanese_sources():
+    en_items = [
+        {"title": f"en{i}", "url": f"u-en-{i}", "source": "Highsnobiety", "published": f"2026-08-{20 - i:02d}"}
+        for i in range(10)
+    ]
+    jp_items = [
+        {"title": f"jp{i}", "url": f"u-jp-{i}", "source": "Fashionsnap", "published": f"2026-08-{15 - i:02d}"}
+        for i in range(10)
+    ]
+    items = sorted(en_items + jp_items, key=lambda i: i["published"], reverse=True)
+    result = _prioritize_japanese(items, 16)
+    assert len(result) == 16
+    jp_count = sum(1 for i in result if i["source"] == "Fashionsnap")
+    assert jp_count == 10  # 目標11件だが国内メディアの実在数(10件)が上限になる
+
+
+def test_prioritize_japanese_backfills_with_japanese_when_other_sources_scarce():
+    en_items = [
+        {"title": f"en{i}", "url": f"u-en-{i}", "source": "Highsnobiety", "published": f"2026-08-{20 - i:02d}"}
+        for i in range(2)
+    ]
+    jp_items = [
+        {"title": f"jp{i}", "url": f"u-jp-{i}", "source": "Fashionsnap", "published": f"2026-08-{15 - i:02d}"}
+        for i in range(20)
+    ]
+    items = sorted(en_items + jp_items, key=lambda i: i["published"], reverse=True)
+    result = _prioritize_japanese(items, 16)
+    assert len(result) == 16
+    en_count = sum(1 for i in result if i["source"] == "Highsnobiety")
+    jp_count = sum(1 for i in result if i["source"] == "Fashionsnap")
+    assert en_count == 2  # 海外メディアは実在する2件を全て採用
+    assert jp_count == 14  # 不足分は国内メディアで埋め戻す
+
+
+def test_build_index_grid_prioritizes_japanese_sources(tmp_path):
+    en_items = [
+        {
+            "title": f"海外記事{i}",
+            "url": f"https://example.com/en/{i}",
+            "source": "Highsnobiety",
+            "published": f"2026-08-{20 - i:02d}T00:00:00+00:00",
+            "summary": "",
+            "image_url": None,
+        }
+        for i in range(10)
+    ]
+    jp_items = [
+        {
+            "title": f"国内記事{i}",
+            "url": f"https://example.com/jp/{i}",
+            "source": "Fashionsnap",
+            "published": f"2026-08-{15 - i:02d}T00:00:00+00:00",
+            "summary": "",
+            "image_url": None,
+        }
+        for i in range(10)
+    ]
+    items = sorted(en_items + jp_items, key=lambda i: i["published"], reverse=True)
+    build(tmp_path, items, [])
+    index_html = (tmp_path / "index.html").read_text(encoding="utf-8")
+    jp_count = sum(1 for i in range(10) if f"国内記事{i}" in index_html)
+    en_count = sum(1 for i in range(10) if f"海外記事{i}" in index_html)
+    # 海外メディア（Highsnobiety）の方が新しい記事が多くても、
+    # トップページの表示は国内メディアが優勢になる
+    assert jp_count > en_count
+    assert jp_count >= 9
 
 
 def test_build_index_trends_shows_up_to_5_posts(tmp_path):
