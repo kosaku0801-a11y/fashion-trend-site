@@ -13,6 +13,7 @@
   --display: "Zen Kaku Gothic New", "Hiragino Sans", "Yu Gothic UI", "Helvetica Neue", sans-serif;
   --body: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Helvetica Neue", sans-serif;
   --mono: "SF Mono", "Menlo", "Courier New", monospace;
+  --wordmark: "Bebas Neue", "Zen Kaku Gothic New", sans-serif;
 }
 
 * {
@@ -53,12 +54,26 @@ img {
 }
 
 .site-header a.brand {
-  font-family: var(--display);
-  font-weight: 900;
-  font-size: clamp(1.3rem, 2.2vw, 1.9rem);
-  letter-spacing: 0.02em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  line-height: 1;
   text-decoration: none;
   color: var(--ink);
+}
+
+.brand-en {
+  font-family: var(--wordmark);
+  font-weight: 400;
+  font-size: clamp(1.7rem, 3.4vw, 2.4rem);
+  letter-spacing: 0.05em;
+}
+
+.brand-ja {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.07em;
+  color: var(--mute);
 }
 
 .site-header .tagline {
